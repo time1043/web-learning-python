@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>新闻列表</title>
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            th, td {
+                border: 1px solid #dddddd;
+                padding: 8px;
+                text-align: left;
+            }
+
+            th {
+                background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="list-news">
+            <h1>新闻列表</h1>
+            <ul>
+                {% for news in list_data %}
+                    <li>
+                        <a href="{{ news.news_link }}" target="_blank">{{ news.news_title }}</a>
+                        <p>发布时间: {{ news.post_time }}</p>
+                        <p>摘要: {{ news.news_summary|default:"无摘要" }}</p>
+                        {% if news.news_thumbnail %}
+                            <img src="{{ news.news_thumbnail }}" alt="{{ news.news_title }} thumbnail">
+                        {% else %}
+                            <p>无缩略图</p>
+                        {% endif %}
+                        <p>点击量: {{ news.hits }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <hr/>
+        <div class="news-list">
+            <h1>新闻列表</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>标题</th>
+                        <th>发布时间</th>
+                        <th>摘要</th>
+                        <th>缩略图</th>
+                        <th>点击量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for news in list_data %}
+                        <tr>
+                            <td><a href="{{ news.news_link }}" target="_blank">{{ news.news_title }}</a></td>
+                            <td>{{ news.post_time }}</td>
+                            <td>{{ news.news_summary|default:"无摘要" }}</td>
+                            <td>
+                                {% if news.news_thumbnail %}
+                                    <img src="{{ news.news_thumbnail }}" alt="{{ news.news_title }} thumbnail"
+                                         width="50">
+                                {% else %}
+                                    无缩略图
+                                {% endif %}
+                            </td>
+                            <td>{{ news.hits }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>

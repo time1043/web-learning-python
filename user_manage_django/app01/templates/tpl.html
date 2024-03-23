@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>模板语法</title>
+    </head>
+    <body>
+        <h1>模板语法</h1>
+        <h3>单个变量</h3>
+        <div>{{ n1 }}</div>
+
+        <hr/>
+        <h3>数组取值</h3>
+        <div>{{ n2.0 }}</div>
+        <div>{{ n2.1 }}</div>
+        <div>{{ n2.2 }}</div>
+
+        <h3>数组循环</h3>
+        <div>
+            {% for item in n2 %}
+                <span>{{ item }}</span>
+            {% endfor %}
+        </div>
+
+        <hr/>
+        <h3>字典取值</h3>
+        <div>
+            {{ n3 }}
+            {{ n3.name }}
+            {{ n3.salary }}
+            {{ n3.role }}
+        </div>
+
+        <h3>循环字典的键</h3>
+        <ul>
+            {% for k in n3.keys %}
+                <li>{{ k }}</li>
+            {% endfor %}
+        </ul>
+        <h3>循环字典的值</h3>
+        <ul>
+            {% for v in n3.values %}
+                <li>{{ v }}</li>
+            {% endfor %}
+        </ul>
+        <h3>循环字典的键值对</h3>
+        <ul>
+            {% for k,v in n3.items %}
+                <li>{{ k }} ==> {{ v }}</li>
+            {% endfor %}
+        </ul>
+
+        <hr/>
+        <h3>列表里套字典</h3>
+        {{ n4.1 }}
+        {{ n4.1.role }}
+
+        <h3>循环</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Salary</th>
+                    <th>Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in n4 %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.salary }}</td>
+                        <td>{{ item.role }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <hr/>
+        <h3>条件语句</h3>
+        {% if n1 == '沈以容' %}
+            <h5>欢迎您，沈以容</h5>
+        {% elif n1 == '周坚深' %}
+            <h5>也欢迎您，周坚深</h5>
+        {% else %}
+            <h5>对不起，您是陌生用户</h5>
+        {% endif %}
+
+    </body>
+</html>
