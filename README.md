@@ -1473,9 +1473,25 @@
 
   
 
-  
+  定义母版layout.html
 
+  ```
+  {% load static %}
   
+      {% block css %}{% endblock %}
+      {% block js %}{% endblock %}
+      {% block content %}{% endblock %}
+  ```
+
+  继承母版
+
+  ```
+  {% extends 'layout.html' %}
+  
+  {% block css %}{% endblock %}
+  {% block content %}{% endblock %}
+  {% block js %}{% endblock %}
+  ```
 
   1
 
