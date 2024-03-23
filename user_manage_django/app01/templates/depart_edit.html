@@ -3,7 +3,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>部门添加</title>
+        <title>部门编辑</title>
         <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
     </head>
 
@@ -55,7 +55,7 @@
             <div class="container">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">新建部门</h3>
+                        <h3 class="panel-title">编辑部门</h3>
                     </div>
                     <div class="panel-body">
 
@@ -64,7 +64,8 @@
                             {% csrf_token %}
                             <div class="form-group">
                                 <label>标题</label>
-                                <input type="text" class="form-control" placeholder="标题" name="title">
+                                <input type="text" class="form-control" placeholder="标题" name="title"
+                                       value="{{ row.title }}">
                             </div>
                             <button type="submit" class="btn btn-primary">提 交</button>
                         </form>

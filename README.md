@@ -46,8 +46,8 @@
   创建项目 (命令行 pycharm)
 
   ```
-  cd D:\code2\python-code\user-manage
-  django-admin startproject user-manage-django
+  cd D:\code2\python-code\user-manage-learning
+  django-admin startproject user_manage_django
   
   # 命令行创建：最标准
   # pycharm创建：在标准的基础上多加templates、settings.py数据
@@ -840,6 +840,650 @@
 
 
 
+## 员工管理系统
+
+### 环境准备
+
+- 项目环境
+
+  命令行
+
+  ```
+  cd /d/code2/python-code/user-manage-learning/
+  rm -rf user_manage_django/
+  
+  cd D:\code2\python-code\user-manage-learning
+  django-admin startproject user_manage_django
+  
+  ```
+
+  pycharm创建项目
+
+  1 删除templates文件夹
+
+  2 配置settings: "DIRS": [],
+
+  settings.py
+
+  ```python
+  
+  TEMPLATES = [
+      {
+          "BACKEND": "django.template.backends.django.DjangoTemplates",
+          "DIRS": [],
+          "APP_DIRS": True,
+          "OPTIONS": {
+              "context_processors": [
+                  "django.template.context_processors.debug",
+                  "django.template.context_processors.request",
+                  "django.contrib.auth.context_processors.auth",
+                  "django.contrib.messages.context_processors.messages",
+              ],
+          },
+      },
+  ]
+  
+  ```
+
+  
+
+- 创建app
+
+  ```
+   python manage.py startapp app01
+   
+  ```
+
+  注册app settings.py
+
+  ```python
+  
+  INSTALLED_APPS = [
+      "django.contrib.admin",
+      "django.contrib.auth",
+      "django.contrib.contenttypes",
+      "django.contrib.sessions",
+      "django.contrib.messages",
+      "django.contrib.staticfiles",
+      'app01.apps.App01Config',
+  ]
+  
+  ```
+
+  
+
+- 数据库环境
+
+  设计表结构
+
+  ![Snipaste_2023-11-03_20-17-47](res/Snipaste_2023-11-03_20-17-47.png)
+
+  部门ID需不需要约束？只能是部门表中已存在ID  `depart = models.ForeignKey(to='与哪张表关联', to_field='与这张表的哪一列关联')  # 报错`  
+
+  (django内部：depart -> depart_id)
+
+  部门被删除，关联的用户？删除用户，级联删除  `depart = models.ForeignKey(to='', to_field='', on_delete=models.CASCADE)`
+
+  部门被删除，关联的用户？部门ID列置空  `depart = models.ForeignKey(to='', to_field='', null=True, blank=True, on_delete=models.SET_NULL)`
+
+  
+
+  D:\code2\python-code\user-manage-learning\user_manage_django\app01\models.py
+
+  ```python
+  from django.db import models
+  
+  
+  class Department(models.Model):
+      """ 部门表 """
+      title = models.CharField(verbose_name='标题', max_length=100)
+  
+  
+  class UserInfo(models.Model):
+      """ 员工表 """
+      name = models.CharField(verbose_name='姓名', max_length=16)
+      password = models.CharField(verbose_name='密码', max_length=64)
+      age = models.CharField(verbose_name='年龄', max_length=3)
+      account = models.DecimalField(verbose_name='账户余额', max_digits=10, decimal_places=2, default=0)
+      create_time = models.DateTimeField(verbose_name='入职时间')
+  
+      depart = models.ForeignKey(to='Department', to_field='id', on_delete=models.CASCADE)
+  
+      gender_choices = ((1, '男'), (0, '女'))  # 性别不会增减  字节占用少  django约束
+      gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices)
+  
+  ```
+  
+  
+  
+- 数据库连接
+
+  ```
+  drop database forWeb2;
+  create database forWeb2;
+  use forWeb2;
+  
+  ```
+
+  settings.py
+  
+  ```python
+  # Database
+  # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+  
+  DATABASES = {
+      'default': {
+          'ENGINE': 'django.db.backends.mysql',
+          'NAME': 'forWeb2',
+          'USER': 'root',
+          'PASSWORD': '123456',
+          'HOST': '127.0.0.1',
+          'PORT': '3306',
+      }
+  }
+  ```
+  
+  ```
+  python manage.py makemigrations
+  python manage.py migrate
+  
+  ```
+  
+  
+
+- 生成一些假数据
+
+  ```
+  mkdir utils && touch utils/generate_data.py
+  
+  ```
+
+  D:\code2\python-code\user-manage-learning\user_manage_django\utils\generate_data.py
+
+  ```python
+  import datetime
+  import os
+  import random
+  import string
+  
+  import django
+  from django.utils import timezone
+  from faker import Faker
+  
+  # 确保在导入任何Django模块之前设置环境变量和初始化Django
+  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "user_manage_django.settings")
+  django.setup()
+  
+  from app01.models import Department, UserInfo
+  
+  
+  def create_data_to_department():
+      # 读取文件
+      department_names = []
+      with open('departments_name.txt', 'r', encoding='utf-8') as file:
+          for line in file:
+              department_names.append(line.strip())
+      print(department_names)
+      # 添加到数据库中
+      for dept in department_names:
+          Department.objects.create(title=dept)
+  
+  
+  """
+  def generate_random_password(length=8):
+      characters = string.ascii_letters + string.digits
+      return ''.join(random.choice(characters) for i in range(length))
+  """
+  
+  
+  def generate_random_password(length=8):
+      if length < 3:
+          raise ValueError("ensure the password contains an uppercase, a lowercase, and a number.")
+      # 先确保至少有一个大写字母、一个小写字母和一个数字
+      password = [
+          random.choice(string.ascii_lowercase),
+          random.choice(string.ascii_uppercase),
+          random.choice(string.digits)
+      ]
+      # 填充剩下的长度
+      for i in range(length - 3):
+          characters = string.ascii_letters + string.digits
+          password.append(random.choice(characters))
+      # 打乱字符的顺序以确保随机性
+      random.shuffle(password)
+      return ''.join(password)
+  
+  
+  def create_data_to_userinfo(count):
+      for _ in range(count):
+          naive_datetime = fake.date_time_this_decade(before_now=True, after_now=False, tzinfo=None)  # 无时区信息
+          aware_datetime = timezone.make_aware(naive_datetime, timezone.get_default_timezone())  # 转换为有时区信息的对象
+  
+          user = UserInfo(
+              name=fake.name(),
+              password=generate_random_password(),
+              age=fake.random_int(min=20, max=60),
+              account=fake.pydecimal(left_digits=8, right_digits=2, positive=True),
+              create_time=aware_datetime,
+              depart=random.choice(Department.objects.all()),
+              gender=fake.random_element(elements=[0, 1])
+          )
+          user.save()
+  
+  
+  if __name__ == '__main__':
+      fake = Faker('zh_CN')
+      create_data_to_department()
+      create_data_to_userinfo(1000)
+  
+  ```
+
+  
+
+- 静态文件模板文件的准备
+
+  ```
+  mkdir -p app01/templates 
+  mkdir -p app01/static/css app01/static/img app01/static/js app01/static/plugins
+  ```
+
+  
+
+
+
+### 部门管理
+
+#### 原生解
+
+- 页面设计
+
+  ![Snipaste_2023-11-03_21-26-19](res/Snipaste_2023-11-03_21-26-19.png)
+
+  路由注册 urls.py
+
+  ```python
+  from django.contrib import admin
+  from django.urls import path
+  
+  from app01 import views
+  
+  urlpatterns = [
+      path('admin/', admin.site.urls),
+      path("depart/list/", views.depart_list),
+      path("depart/add/", views.depart_add),
+      path("depart/dlt/", views.depart_dlt),
+      path("depart/<int:nid>/edit/", views.depart_edit),
+  ]
+  ```
+
+  视图函数 views.py
+
+  ```python
+  from django.shortcuts import render, redirect
+  
+  from app01.models import Department
+  
+  
+  def depart_list(request):
+      """ 部门列表 """
+      list_depart = Department.objects.all()  # 数据库获取数据
+      return render(request, 'depart_list.html', {'list_depart': list_depart})
+  
+  
+  def depart_add(request):
+      """ 部门添加 """
+      if request.method == 'GET':
+          return render(request, 'depart_add.html')
+      # POST  获取用户提交数据  保存到数据库
+      title = request.POST.get('title')
+      Department.objects.create(title=title)
+      return redirect('/depart/list/')  # 重定向
+  
+  
+  def depart_dlt(request):
+      """ 部门删除 """
+      depart_id = request.GET.get('nid')
+      Department.objects.filter(id=depart_id).delete()
+      return redirect('/depart/list/')
+  
+  
+  def depart_edit(request, nid):  # 编辑区别于添加  携带id
+      """ 部门编辑 """
+      if request.method == 'GET':
+          row = Department.objects.filter(id=nid).first()
+          return render(request, 'depart_edit.html', {'row': row})  # 传默认值
+      # POST  获取用户提交数据  更新到数据库
+      title = request.POST.get('title')
+      Department.objects.filter(id=nid).update(title=title)
+      return redirect('/depart/list/')  # 重定向
+  
+  ```
+
+  
+
+- 接口处理
+
+  部门列表：
+
+  新建部门：depart_list链接depart_add.html、urls、views)
+
+  删除功能：urls、views) (加入depart_list.html 本页面完成)
+
+  编辑页面：urls、views) (携带id：django正则) (传默认值)
+
+  depart_list.html
+
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>部门列表</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+      </head>
+  
+  
+      <body>
+          <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+          <script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.js' %}"></script>
+  
+          <!--导航栏-->
+          <nav class="navbar navbar-default">
+              <div class="container">
+                  <!-- Brand and toggle get grouped for better mobile display -->
+                  <div class="navbar-header">
+                      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                              data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                          <span class="sr-only">Toggle navigation</span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </button>
+                      <a class="navbar-brand" href="#">员工用户管理系统</a>
+                  </div>
+  
+                  <!-- Collect the nav links, forms, and other content for toggling -->
+                  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                      <ul class="nav navbar-nav">
+                          <li><a href="/depart/list">部门管理</a></li>
+                          <li><a href="#">用户管理</a></li>
+                      </ul>
+                      <ul class="nav navbar-nav navbar-right">
+                          <li><a href="#">登录</a></li>
+                          <li class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                 aria-haspopup="true" aria-expanded="false">周坚深 <span class="caret"></span></a>
+                              <ul class="dropdown-menu">
+                                  <li><a href="#">个人资料</a></li>
+                                  <li><a href="#">我的信息</a></li>
+                                  <li role="separator" class="divider"></li>
+                                  <li><a href="#">注销</a></li>
+                              </ul>
+                          </li>
+                      </ul>
+                  </div><!-- /.navbar-collapse -->
+              </div><!-- /.container-fluid -->
+          </nav>
+  
+          <!--主界面-->
+          <div>
+              <div class="container">
+                  <!--按钮-->
+                  <div style="margin-bottom: 10px">
+                      <a class="btn btn-success" href="/depart/add/">
+                          <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                          新建部门
+                      </a>
+                  </div>
+  
+                  <!--表格 面板-->
+                  <div class="panel panel-default">
+                      <!-- Default panel contents -->
+                      <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                              style="vertical-align: inherit;">
+                          <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                          部门列表
+                      </font></font></div>
+  
+                      <!-- Table -->
+                      <table class="table">
+                          <thead>
+                              <tr>
+                                  <th><font style="vertical-align: inherit;"><font
+                                          style="vertical-align: inherit;">ID</font></font></th>
+                                  <th><font style="vertical-align: inherit;"><font
+                                          style="vertical-align: inherit;">名称</font></font></th>
+                                  <th><font style="vertical-align: inherit;"><font
+                                          style="vertical-align: inherit;">操作</font></font></th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for depart in list_depart %}
+                                  <tr>
+                                      <th scope="row"><font style="vertical-align: inherit;"><font
+                                              style="vertical-align: inherit;">{{ depart.id }}</font></font></th>
+                                      <td><font style="vertical-align: inherit;"><font
+                                              style="vertical-align: inherit;">{{ depart.title }}</font></font></td>
+                                      <td><font style="vertical-align: inherit;"><font
+                                              style="vertical-align: inherit;">
+                                          <a class="btn btn-primary btn-xs" href="/depart/{{ depart.id }}/edit/">编辑</a>
+                                          <a class="btn btn-danger btn-xs"
+                                             href="/depart/dlt/?nid={{ depart.id }}">删除</a>
+                                      </font></font></td>
+                                  </tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+  
+              </div>
+          </div>
+      </body>
+  </html>
+  ```
+
+  depart_add.html
+  
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>部门添加</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+      </head>
+  
+  
+      <body>
+          <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+          <script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.js' %}"></script>
+  
+          <!--导航栏-->
+          <nav class="navbar navbar-default">
+              <div class="container">
+                  <!-- Brand and toggle get grouped for better mobile display -->
+                  <div class="navbar-header">
+                      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                              data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                          <span class="sr-only">Toggle navigation</span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </button>
+                      <a class="navbar-brand" href="#">员工用户管理系统</a>
+                  </div>
+  
+                  <!-- Collect the nav links, forms, and other content for toggling -->
+                  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                      <ul class="nav navbar-nav">
+                          <li><a href="/depart/list">部门管理</a></li>
+                          <li><a href="#">用户管理</a></li>
+                      </ul>
+                      <ul class="nav navbar-nav navbar-right">
+                          <li><a href="#">登录</a></li>
+                          <li class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                 aria-haspopup="true" aria-expanded="false">周坚深 <span class="caret"></span></a>
+                              <ul class="dropdown-menu">
+                                  <li><a href="#">个人资料</a></li>
+                                  <li><a href="#">我的信息</a></li>
+                                  <li role="separator" class="divider"></li>
+                                  <li><a href="#">注销</a></li>
+                              </ul>
+                          </li>
+                      </ul>
+                  </div><!-- /.navbar-collapse -->
+              </div><!-- /.container-fluid -->
+          </nav>
+  
+          <!--表单 面板-->
+          <div>
+              <div class="container">
+                  <div class="panel panel-default">
+                      <div class="panel-heading">
+                          <h3 class="panel-title">新建部门</h3>
+                      </div>
+                      <div class="panel-body">
+  
+                          <!--表单-->
+                          <form method="post">
+                              {% csrf_token %}
+                              <div class="form-group">
+                                  <label>标题</label>
+                                  <input type="text" class="form-control" placeholder="标题" name="title">
+                              </div>
+                              <button type="submit" class="btn btn-primary">提 交</button>
+                          </form>
+  
+                      </div>
+                  </div>
+              </div>
+          </div>
+  
+      </body>
+  </html>
+  ```
+  
+  depart_edit.html
+  
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>部门编辑</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+      </head>
+  
+  
+      <body>
+          <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+          <script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.js' %}"></script>
+  
+          <!--导航栏-->
+          <nav class="navbar navbar-default">
+              <div class="container">
+                  <!-- Brand and toggle get grouped for better mobile display -->
+                  <div class="navbar-header">
+                      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                              data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                          <span class="sr-only">Toggle navigation</span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </button>
+                      <a class="navbar-brand" href="#">员工用户管理系统</a>
+                  </div>
+  
+                  <!-- Collect the nav links, forms, and other content for toggling -->
+                  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                      <ul class="nav navbar-nav">
+                          <li><a href="/depart/list">部门管理</a></li>
+                          <li><a href="#">用户管理</a></li>
+                      </ul>
+                      <ul class="nav navbar-nav navbar-right">
+                          <li><a href="#">登录</a></li>
+                          <li class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                 aria-haspopup="true" aria-expanded="false">周坚深 <span class="caret"></span></a>
+                              <ul class="dropdown-menu">
+                                  <li><a href="#">个人资料</a></li>
+                                  <li><a href="#">我的信息</a></li>
+                                  <li role="separator" class="divider"></li>
+                                  <li><a href="#">注销</a></li>
+                              </ul>
+                          </li>
+                      </ul>
+                  </div><!-- /.navbar-collapse -->
+              </div><!-- /.container-fluid -->
+          </nav>
+  
+          <!--表单 面板-->
+          <div>
+              <div class="container">
+                  <div class="panel panel-default">
+                      <div class="panel-heading">
+                          <h3 class="panel-title">编辑部门</h3>
+                      </div>
+                      <div class="panel-body">
+  
+                          <!--表单-->
+                          <form method="post">
+                              {% csrf_token %}
+                              <div class="form-group">
+                                  <label>标题</label>
+                                  <input type="text" class="form-control" placeholder="标题" name="title"
+                                         value="{{ row.title }}">
+                              </div>
+                              <button type="submit" class="btn btn-primary">提 交</button>
+                          </form>
+  
+                      </div>
+                  </div>
+              </div>
+          </div>
+  
+      </body>
+  </html>
+  ```
+  
+  
+
+- url传递动态值
+
+  ```
+  urls.py
+  path("depart/<int:nid>/edit/", views.depart_edit),
+  
+  depart_list.html
+  <a class="btn btn-primary btn-xs" href="/depart/{{ depart.id }}/edit/">编辑</a>
+  
+  ```
+
+  
+
+#### 模板的继承
+
+- 简化
+
+  部门列表、添加部门、编辑部门  ——  拷贝导航栏、引入  ——  固定的、动态的
+
+  
+
+  
+
+  
+
+  1
+
+
+
+
+
+#### django组件
 
 
 
@@ -859,8 +1503,24 @@
 
 
 
+### 用户管理(原生解)
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 用户管理()
