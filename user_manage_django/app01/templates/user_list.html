@@ -5,6 +5,7 @@
         .panel {
             margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
         }
+
         .fixed-pagination {
             position: fixed;
             bottom: 0;
@@ -23,6 +24,10 @@
             <a class="btn btn-success" href="/user/add/">
                 <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
                 新建用户
+            </a>
+            <a class="btn btn-success" href="/user/model/form/add/">
+                <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                新建用户mf
             </a>
         </div>
 
@@ -82,6 +87,7 @@
                             <td><font style="vertical-align: inherit;"><font
                                     style="vertical-align: inherit;">
                                 <a class="btn btn-primary btn-xs" href="/user/{{ user.id }}/edit/">编辑</a>
+                                <a class="btn btn-primary btn-xs" href="/user/model/form/{{ user.id }}/edit/">编辑mf</a>
                                 <a class="btn btn-danger btn-xs"
                                    href="/user/dlt/?nid={{ user.id }}">删除</a>
                             </font></font></td>
