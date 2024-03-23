@@ -644,7 +644,7 @@
 
   
 
-## 用户管理
+### 【案例】用户管理
 
 - 用户管理
 
@@ -703,9 +703,140 @@
       return redirect('/depart/list/')
   ```
 
-  
+  D:\code2\python-code\user-manage\user_manage_django\app01\templates\depart_list.html
 
-  1
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>部门列表</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+      </head>
+  
+  
+      <body>
+          <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+          <script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.js' %}"></script>
+  
+          <!--导航栏-->
+          <nav class="navbar navbar-default">
+              <div class="container">
+                  <!-- Brand and toggle get grouped for better mobile display -->
+                  <div class="navbar-header">
+                      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                              data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                          <span class="sr-only">Toggle navigation</span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </button>
+                      <a class="navbar-brand" href="#">员工用户管理系统</a>
+                  </div>
+  
+                  <!-- Collect the nav links, forms, and other content for toggling -->
+                  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                      <ul class="nav navbar-nav">
+                          <li><a href="/depart/list">部门管理</a></li>
+                          <li><a href="#">用户管理</a></li>
+                      </ul>
+                      <ul class="nav navbar-nav navbar-right">
+                          <li><a href="#">登录</a></li>
+                          <li class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                 aria-haspopup="true" aria-expanded="false">周坚深 <span class="caret"></span></a>
+                              <ul class="dropdown-menu">
+                                  <li><a href="#">个人资料</a></li>
+                                  <li><a href="#">我的信息</a></li>
+                                  <li role="separator" class="divider"></li>
+                                  <li><a href="#">注销</a></li>
+                              </ul>
+                          </li>
+                      </ul>
+                  </div><!-- /.navbar-collapse -->
+              </div><!-- /.container-fluid -->
+          </nav>
+  
+          <!--主界面-->
+          <div>
+              <div class="container">
+                  <!--按钮-->
+                  <div style="margin-bottom: 10px">
+                      <a class="btn btn-success" href="/depart/add/">
+                          <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                          新建部门
+                      </a>
+                  </div>
+  
+                  <!--表格 面板-->
+                  <div class="panel panel-default">
+                      <!-- Default panel contents -->
+                      <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                              style="vertical-align: inherit;">
+                          <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                          部门列表
+                      </font></font></div>
+  
+                      <!-- Table -->
+                      <table class="table">
+                          <thead>
+                              <tr>
+                                  <th><font style="vertical-align: inherit;"><font
+                                          style="vertical-align: inherit;">ID</font></font></th>
+                                  <th><font style="vertical-align: inherit;"><font
+                                          style="vertical-align: inherit;">名称</font></font></th>
+                                  <th><font style="vertical-align: inherit;"><font
+                                          style="vertical-align: inherit;">操作</font></font></th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for depart in list_depart %}
+                                  <tr>
+                                      <th scope="row"><font style="vertical-align: inherit;"><font
+                                              style="vertical-align: inherit;">{{ depart.id }}</font></font></th>
+                                      <td><font style="vertical-align: inherit;"><font
+                                              style="vertical-align: inherit;">{{ depart.title }}</font></font></td>
+                                      <td><font style="vertical-align: inherit;"><font
+                                              style="vertical-align: inherit;">
+                                          <a class="btn btn-primary btn-xs">编辑</a>
+                                          <a class="btn btn-danger btn-xs" href="/depart/dlt/?nid={{ depart.id }}">删除</a>
+                                      </font></font></td>
+                                  </tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+  
+              </div>
+          </div>
+      </body>
+  </html>
+  ```
+
+  D:\code2\python-code\user-manage\user_manage_django\app01\templates\depart_list.html
+
+  ```html
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>添加用户界面</title>
+      </head>
+      <body>
+          <h1>添加用户界面</h1>
+          <form method="post">
+              {% csrf_token %}
+              <input type="text" name="user" placeholder="用户名">
+              <input type="text" name="pwd" placeholder="密码">
+              <input type="text" name="age" placeholder="年龄">
+              <input type="submit" value="提交">
+          </form>
+      </body>
+  </html>
+  ```
+
+  
 
 
 

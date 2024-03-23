@@ -2,16 +2,16 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>欢迎登录</title>
+        <title>添加用户界面</title>
     </head>
     <body>
-        <h1>欢迎来到丑兮兮的登录界面</h1>
-        <form method="post" action="/login/">
+        <h1>添加用户界面</h1>
+        <form method="post">
             {% csrf_token %}
             <input type="text" name="user" placeholder="用户名">
-            <input type="password" name="pwd" placeholder="密码">
+            <input type="text" name="pwd" placeholder="密码">
+            <input type="text" name="age" placeholder="年龄">
             <input type="submit" value="提交">
-            <span style="color: red">{{ error_msg }}</span>
         </form>
     </body>
 </html>
