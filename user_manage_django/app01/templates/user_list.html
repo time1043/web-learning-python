@@ -1,0 +1,168 @@
+{% extends 'layout.html' %}
+
+{% block css %}
+    <style>
+        .panel {
+            margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+        }
+        .fixed-pagination {
+            position: fixed;
+            bottom: 0;
+            left: 50%; /* 把左边位置设置为视窗的50% */
+            transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+            background-color: transparent;
+            padding: 10px 0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <!--按钮-->
+        <div style="margin-bottom: 10px">
+            <a class="btn btn-success" href="/user/add/">
+                <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                新建用户
+            </a>
+        </div>
+
+        <!--表格 面板-->
+        <div class="panel panel-default">
+            <!-- Default panel contents -->
+            <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                    style="vertical-align: inherit;">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                用户列表
+            </font></font></div>
+
+            <!-- Table -->
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">ID</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">姓名</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">密码</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">年龄</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">账户余额</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">入职时间</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">性别</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">所在部门</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">操作</font></font></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <th scope="row"><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.id }}</font></font></th>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.name }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.password }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.age }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.account }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.create_time|date:'Y-m-d h:i:s' }}</font></font>
+                            </td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.get_gender_display }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ user.depart.title }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">
+                                <a class="btn btn-primary btn-xs" href="/user/{{ user.id }}/edit/">编辑</a>
+                                <a class="btn btn-danger btn-xs"
+                                   href="/user/dlt/?nid={{ user.id }}">删除</a>
+                            </font></font></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!--分页控件-->
+        <nav aria-label="Page navigation" class="fixed-pagination">
+            <ul class="pagination">
+                {% if users.has_previous %}
+                    <li>
+                        <a href="?page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ users.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="disabled">
+                        <a href="#" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="disabled">
+                        <a href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if users.number|add:"-5" > 1 %}
+                    <li><a href="?page=1">1</a></li>
+                    <li class="disabled"><span>...</span></li>
+                {% endif %}
+
+                {% for i in users.paginator.page_range %}
+                    {% if i >= users.number|add:"-5" and i <= users.number|add:"4" %}
+                        {% if users.number == i %}
+                            <li class="active"><a href="?page={{ i }}">{{ i }}</a></li>
+                        {% else %}
+                            <li><a href="?page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if users.number|add:"4" < users.paginator.num_pages %}
+                    <li class="disabled"><span>...</span></li>
+                    <li><a href="?page={{ users.paginator.num_pages }}">{{ users.paginator.num_pages }}</a></li>
+                {% endif %}
+
+                {% if users.has_next %}
+                    <li>
+                        <a href="?page={{ users.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ users.paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="disabled">
+                        <a href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="disabled">
+                        <a href="#" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+    </div>
+{% endblock %}

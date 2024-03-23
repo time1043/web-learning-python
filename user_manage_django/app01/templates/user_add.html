@@ -1,0 +1,83 @@
+{% extends 'layout.html' %}
+
+{% block css %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">新建用户</h3>
+            </div>
+            <div class="panel-body">
+
+                <!--表单-->
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>姓名</label>
+                        <input type="text" class="form-control" placeholder="姓名" name="username">
+
+                        <label>密码</label>
+                        <div class="input-group">
+                            <input type="password" id="passwordInput" class="form-control" placeholder="密码"
+                                   name="password">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button" id="togglePassword"><i
+                                        class="fa fa-eye"></i></button>
+                            </span>
+                        </div>
+
+                        <label>年龄</label>
+                        <input type="number" class="form-control" placeholder="年龄" name="age">
+                        <label>账户余额</label>
+                        <input type="number" step="0.01" class="form-control" placeholder="账户余额" name="account">
+
+                        <!--<label>入职时间</label>
+                        <input type="data" class="form-control" placeholder="入职时间" name="create_time">
+                        <label>所属部门</label>
+                        <input type="text" class="form-control" placeholder="所属部门" name="depart_id">
+                        <label>性别</label>
+                        <input type="text" class="form-control" placeholder="性别" name="gender">-->
+
+                        <label>入职时间</label>
+                        <input type="datetime-local" name="create_time" class="form-control">
+
+                        <label>所属部门</label>
+                        <select name="depart" class="form-control">
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.title }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label>性别</label>
+                        <div>
+                            {% for value, name in gender_choices %}
+                                <label class="radio-inline">
+                                    <input type="radio" name="gender" value="{{ value }}"> {{ name }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">提 交</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            let passwordInput = document.getElementById('passwordInput');
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+            } else {
+                passwordInput.type = "password";
+            }
+        });
+    </script>
+{% endblock %}

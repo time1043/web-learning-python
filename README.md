@@ -844,6 +844,8 @@
 
 ### 环境准备
 
+#### 创建项目注册app
+
 - 项目环境
 
   命令行
@@ -912,6 +914,8 @@
 
   
 
+#### 数据库环境
+
 - 数据库环境
 
   设计表结构
@@ -953,9 +957,9 @@
       gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices)
   
   ```
+
   
-  
-  
+
 - 数据库连接
 
   ```
@@ -966,7 +970,7 @@
   ```
 
   settings.py
-  
+
   ```python
   # Database
   # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -982,14 +986,16 @@
       }
   }
   ```
-  
+
   ```
   python manage.py makemigrations
   python manage.py migrate
   
   ```
+
   
-  
+
+#### 工具类 (假数据生成)
 
 - 生成一些假数据
 
@@ -1080,6 +1086,8 @@
 
   
 
+#### 静态文件和模板文件
+
 - 静态文件模板文件的准备
 
   ```
@@ -1091,15 +1099,15 @@
 
 
 
-### 部门管理
+### 部门管理和用户管理
 
-#### 原生解
+#### 原生解 
 
 - 页面设计
 
   ![Snipaste_2023-11-03_21-26-19](res/Snipaste_2023-11-03_21-26-19.png)
 
-  路由注册 urls.py
+  路由注册 urls.py  (代码集合)
 
   ```python
   from django.contrib import admin
@@ -1109,19 +1117,28 @@
   
   urlpatterns = [
       path('admin/', admin.site.urls),
+      
+      # 部门管理
       path("depart/list/", views.depart_list),
       path("depart/add/", views.depart_add),
       path("depart/dlt/", views.depart_dlt),
       path("depart/<int:nid>/edit/", views.depart_edit),
+  
+      # 用户管理
+      path("user/list/", views.user_list),
+      path("user/add/", views.user_add),
+      path("user/dlt/", views.user_dlt),
+      path("user/<int:nid>/edit/", views.user_edit),
   ]
   ```
 
-  视图函数 views.py
+  视图函数 views.py  (代码集合)
 
   ```python
+  from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
   from django.shortcuts import render, redirect
   
-  from app01.models import Department
+  from app01.models import Department, UserInfo
   
   
   def depart_list(request):
@@ -1156,6 +1173,68 @@
       title = request.POST.get('title')
       Department.objects.filter(id=nid).update(title=title)
       return redirect('/depart/list/')  # 重定向
+  
+  
+  def user_list(request):
+      """ 用户列表 """
+      list_user = UserInfo.objects.all()
+      paginator = Paginator(list_user, 30)  # 每页显示10条数据
+  
+      page = request.GET.get('page')
+      try:
+          users = paginator.page(page)
+      except PageNotAnInteger:
+          users = paginator.page(1)  # 如果页数不是整数，显示第一页
+      except EmptyPage:
+          users = paginator.page(paginator.num_pages)  # 如果页数超出范围，显示最后一页
+  
+      return render(request, 'user_list.html', {'users': users})
+  
+  
+  def user_add(request):
+      """ 用户添加 """
+      if request.method == 'GET':
+          return render(request, 'user_add.html', {
+              'departments': Department.objects.all(),
+              'gender_choices': UserInfo.gender_choices
+          })
+      # POST
+      name = request.POST.get('username')
+      password = request.POST.get('password')
+      age = request.POST.get('age')
+      account = request.POST.get('account')
+      create_time = request.POST.get('create_time')  # 对违法数据疲软
+      depart_id = request.POST.get('depart')
+      gender = request.POST.get('gender')
+      UserInfo.objects.create(name=name, password=password, age=age, account=account, create_time=create_time,
+                              depart_id=depart_id, gender=gender)
+      return redirect('/user/list/')
+  
+  
+  def user_dlt(request):
+      """ 用户删除 """
+      user_id = request.GET.get('nid')
+      UserInfo.objects.filter(id=user_id).delete()
+      return redirect('/user/list/')
+  
+  
+  def user_edit(request, nid):  # 编辑区别于添加  携带id
+      """ 用户编辑 """
+      if request.method == 'GET':
+          row = UserInfo.objects.filter(id=nid).first()
+          return render(request, 'user_edit.html', {'row': row, 'departments': Department.objects.all(),
+                                                     'gender_choices': UserInfo.gender_choices})
+      # POST
+      name = request.POST.get('username')
+      password = request.POST.get('password')
+      age = request.POST.get('age')
+      account = request.POST.get('account')
+      create_time = request.POST.get('create_time')
+      depart_id = request.POST.get('depart')
+      gender = request.POST.get('gender')
+      UserInfo.objects.filter(id=nid).update(name=name, password=password, age=age, account=account,
+                                             create_time=create_time, depart_id=depart_id, gender=gender)
+      return redirect('/user/list/')
   
   ```
 
@@ -1465,7 +1544,191 @@
 
   
 
-#### 模板的继承
+- 用戶管理 (单例代码)
+
+  user_list的views
+
+  ```python
+  def user_list(request):
+      """ 用户列表 """
+      list_user = UserInfo.objects.all()
+      for user in list_user[:2]:
+          print(user.create_time.strftime('%Y-%m-%d'))
+          print(user.get_gender_display())  # django封装
+          print(user.depart.title)  # django 跨表获取
+      return render(request, 'user_list2.html', {'list_user': list_user})
+  ```
+
+  user_list的html
+
+  ```html
+  <tr>
+      <th scope="row"><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.id }}</font></font></th>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.name }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.password }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.age }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.account }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.create_time|date:'Y-m-d h:i:s' }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.get_gender_display }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">{{ user.depart.title }}</font></font></td>
+      <td><font style="vertical-align: inherit;"><font
+              style="vertical-align: inherit;">
+          <a class="btn btn-primary btn-xs" href="/depart/{{ depart.id }}/edit/">编辑</a>
+          <a class="btn btn-danger btn-xs"
+             href="/depart/dlt/?nid={{ depart.id }}">删除</a>
+      </font></font></td>
+  </tr>
+  ```
+
+  user_add的views
+
+  ```python
+  def user_add(request):
+      """ 用户添加 """
+      if request.method == 'GET':
+          return render(request, 'user_add2.html', {
+              'departments': Department.objects.all(),
+              'gender_choices': UserInfo.gender_choices
+          })
+  ```
+
+  user_add的html
+
+  ```html
+  <!--表单-->
+  <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+          <label>姓名</label>
+          <input type="text" class="form-control" placeholder="姓名" name="username">
+          <label>密码</label>
+          <input type="password" class="form-control" placeholder="密码" name="password">
+          <label>年龄</label>
+          <input type="number" class="form-control" placeholder="年龄" name="age">
+          <label>账户余额</label>
+          <input type="number" step="0.01" class="form-control" placeholder="账户余额" name="account">
+  
+          <!--<label>入职时间</label>
+          <input type="data" class="form-control" placeholder="入职时间" name="create_time">
+          <label>所属部门</label>
+          <input type="text" class="form-control" placeholder="所属部门" name="depart_id">
+          <label>性别</label>
+          <input type="text" class="form-control" placeholder="性别" name="gender">-->
+  
+          <label>入职时间</label>
+          <input type="datetime-local" name="create_time" class="form-control">
+  
+          <label>所属部门</label>
+          <select name="depart" class="form-control">
+              {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.title }}</option>
+              {% endfor %}
+          </select>
+  
+          <label>性别</label>
+          <div>
+              {% for value, name in gender_choices %}
+                  <label class="radio-inline">
+                      <input type="radio" name="gender" value="{{ value }}"> {{ name }}
+                  </label>
+              {% endfor %}
+          </div>
+  
+      </div>
+      <button type="submit" class="btn btn-primary">提 交</button>
+  </form>
+  ```
+
+  user_list的html的dlt按钮
+
+  ```html
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/user/dlt/?nid={{ user.id }}">删除</a>
+  ```
+
+  user_edit的views
+
+  ```python
+  def user_edit(request, nid):  # 编辑区别于添加  携带id
+      """ 用户编辑 """
+      if request.method == 'GET':
+          row = UserInfo.objects.filter(id=nid).first()
+          return render(request, 'user_edit2.html', {'row': row, 'departments': Department.objects.all(),
+                                                     'gender_choices': UserInfo.gender_choices})
+      # POST
+      name = request.POST.get('username')
+      password = request.POST.get('password')
+      age = request.POST.get('age')
+      account = request.POST.get('account')
+      create_time = request.POST.get('create_time')  
+      depart_id = request.POST.get('depart')
+      gender = request.POST.get('gender')
+      UserInfo.objects.filter(id=nid).update(name=name, password=password, age=age, account=account,
+                                             create_time=create_time, depart_id=depart_id, gender=gender)
+      return redirect('/user/list/')
+  ```
+
+  user_edit的html
+
+  ```html
+  <!--表单-->
+  <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+          <label>姓名</label>
+          <input type="text" class="form-control" placeholder="姓名" name="username"
+                 value="{{ row.name }}">
+          <label>密码</label>
+          <input type="password" class="form-control" placeholder="密码" name="password"
+                 value="{{ row.password }}">
+          <label>年龄</label>
+          <input type="number" class="form-control" placeholder="年龄" name="age" value="{{ row.age }}">
+          <label>账户余额</label>
+          <input type="number" step="0.01" class="form-control" placeholder="账户余额" name="account"
+                 value="{{ row.account }}">
+  
+          <label>入职时间</label>
+          <input type="datetime-local" name="create_time" class="form-control"
+                 value="{{ row.create_time|date:'Y-m-d\TH:i' }}">
+  
+          <label>所属部门</label>
+          <select name="depart" class="form-control">
+              {% for dept in departments %}
+                  <option value="{{ dept.id }}" {% if row.depart.id == dept.id %}selected{% endif %}>
+                      {{ dept.title }}
+                  </option>
+              {% endfor %}
+          </select>
+  
+          <label>性别</label>
+          <div>
+              {% for value, name in gender_choices %}
+                  <label class="radio-inline">
+                      <input type="radio" name="gender" value="{{ value }}"
+                             {% if row.gender == value %}checked{% endif %}>
+                      {{ name }}
+                  </label>
+              {% endfor %}
+          </div>
+  
+      </div>
+      <button type="submit" class="btn btn-primary">提 交</button>
+  </form>
+  ```
+
+  1
+
+
+
+#### 模板继承
 
 - 简化
 
@@ -1493,13 +1756,604 @@
   {% block js %}{% endblock %}
   ```
 
+  
+
+- 部门管理
+
+  layout.html
+
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>员工管理系统</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+          {% block css %}{% endblock %}
+      </head>
+  
+  
+      <body>
+          <!--导航栏-->
+          <nav class="navbar navbar-default">
+              <div class="container">
+                  <!-- Brand and toggle get grouped for better mobile display -->
+                  <div class="navbar-header">
+                      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                              data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                          <span class="sr-only">Toggle navigation</span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </button>
+                      <a class="navbar-brand" href="#">员工用户管理系统</a>
+                  </div>
+  
+                  <!-- Collect the nav links, forms, and other content for toggling -->
+                  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                      <ul class="nav navbar-nav">
+                          <li><a href="/depart/list/">部门管理</a></li>
+                          <li><a href="/user/list/">用户管理</a></li>
+                      </ul>
+                      <ul class="nav navbar-nav navbar-right">
+                          <li><a href="#">登录</a></li>
+                          <li class="dropdown">
+                              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                 aria-haspopup="true" aria-expanded="false">周坚深 <span class="caret"></span></a>
+                              <ul class="dropdown-menu">
+                                  <li><a href="#">个人资料</a></li>
+                                  <li><a href="#">我的信息</a></li>
+                                  <li role="separator" class="divider"></li>
+                                  <li><a href="#">注销</a></li>
+                              </ul>
+                          </li>
+                      </ul>
+                  </div><!-- /.navbar-collapse -->
+              </div><!-- /.container-fluid -->
+          </nav>
+  
+          <!--主界面-->
+          <div>
+              {% block content %}{% endblock %}
+          </div>
+  
+          <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+          <script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.js' %}"></script>
+          {% block js %}{% endblock %}
+      </body>
+  </html>
+  ```
+
+  depart_list.html
+
+  ```html
+  {% extends 'layout.html' %}
+  
+  {% block content %}
+      <div class="container">
+          <!--按钮-->
+          <div style="margin-bottom: 10px">
+              <a class="btn btn-success" href="/depart/add/">
+                  <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                  新建部门
+              </a>
+          </div>
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  部门列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">名称</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for depart in list_depart %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ depart.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ depart.title }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs" href="/depart/{{ depart.id }}/edit/">编辑</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/depart/dlt/?nid={{ depart.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  depart_add.html
+
+  ```html
+  {% extends 'layout.html' %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">新建部门</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post">
+                      {% csrf_token %}
+                      <div class="form-group">
+                          <label>标题</label>
+                          <input type="text" class="form-control" placeholder="标题" name="title">
+                      </div>
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  ```
+
+  depart_edit.html
+
+  ```html
+  {% extends 'layout.html' %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">编辑部门</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post">
+                      {% csrf_token %}
+                      <div class="form-group">
+                          <label>标题</label>
+                          <input type="text" class="form-control" placeholder="标题" name="title"
+                                 value="{{ row.title }}">
+                      </div>
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  ```
+
+  
+
+- 用户管理
+
+  用户列表
+
+  新建用户：user_list链接user_add.html、urls、views)
+
+  删除功能：urls、views) (加入user_list.html 本页面完成)
+
+  编辑页面：urls、views) (携带id：django正则) (传默认值)
+
+  
+
+  user_list.html
+
+  ```html
+  {% extends 'layout.html' %}
+  
+  {% block css %}
+      <style>
+          .panel {
+              margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+          }
+          .fixed-pagination {
+              position: fixed;
+              bottom: 0;
+              left: 50%; /* 把左边位置设置为视窗的50% */
+              transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+              background-color: transparent;
+              padding: 10px 0;
+          }
+      </style>
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <!--按钮-->
+          <div style="margin-bottom: 10px">
+              <a class="btn btn-success" href="/user/add/">
+                  <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                  新建用户
+              </a>
+          </div>
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  用户列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">姓名</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">密码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">年龄</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">账户余额</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">入职时间</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">性别</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">所在部门</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for user in users %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.name }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.password }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.age }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.account }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.create_time|date:'Y-m-d h:i:s' }}</font></font>
+                              </td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.get_gender_display }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.depart.title }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs" href="/user/{{ user.id }}/edit/">编辑</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/user/dlt/?nid={{ user.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+          <!--分页控件-->
+          <nav aria-label="Page navigation" class="fixed-pagination">
+              <ul class="pagination">
+                  {% if users.has_previous %}
+                      <li>
+                          <a href="?page=1" aria-label="First">
+                              <span aria-hidden="true">&laquo;&laquo;</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="?page={{ users.previous_page_number }}" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                          </a>
+                      </li>
+                  {% else %}
+                      <li class="disabled">
+                          <a href="#" aria-label="First">
+                              <span aria-hidden="true">&laquo;&laquo;</span>
+                          </a>
+                      </li>
+                      <li class="disabled">
+                          <a href="#" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                          </a>
+                      </li>
+                  {% endif %}
+  
+                  {% if users.number|add:"-5" > 1 %}
+                      <li><a href="?page=1">1</a></li>
+                      <li class="disabled"><span>...</span></li>
+                  {% endif %}
+  
+                  {% for i in users.paginator.page_range %}
+                      {% if i >= users.number|add:"-5" and i <= users.number|add:"4" %}
+                          {% if users.number == i %}
+                              <li class="active"><a href="?page={{ i }}">{{ i }}</a></li>
+                          {% else %}
+                              <li><a href="?page={{ i }}">{{ i }}</a></li>
+                          {% endif %}
+                      {% endif %}
+                  {% endfor %}
+  
+                  {% if users.number|add:"4" < users.paginator.num_pages %}
+                      <li class="disabled"><span>...</span></li>
+                      <li><a href="?page={{ users.paginator.num_pages }}">{{ users.paginator.num_pages }}</a></li>
+                  {% endif %}
+  
+                  {% if users.has_next %}
+                      <li>
+                          <a href="?page={{ users.next_page_number }}" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="?page={{ users.paginator.num_pages }}" aria-label="Last">
+                              <span aria-hidden="true">&raquo;&raquo;</span>
+                          </a>
+                      </li>
+                  {% else %}
+                      <li class="disabled">
+                          <a href="#" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                          </a>
+                      </li>
+                      <li class="disabled">
+                          <a href="#" aria-label="Last">
+                              <span aria-hidden="true">&raquo;&raquo;</span>
+                          </a>
+                      </li>
+                  {% endif %}
+              </ul>
+          </nav>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  user_add.html
+
+  ```html
+  {% extends 'layout.html' %}
+  
+  {% block css %}
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">新建用户</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post">
+                      {% csrf_token %}
+                      <div class="form-group">
+                          <label>姓名</label>
+                          <input type="text" class="form-control" placeholder="姓名" name="username">
+  
+                          <label>密码</label>
+                          <div class="input-group">
+                              <input type="password" id="passwordInput" class="form-control" placeholder="密码"
+                                     name="password">
+                              <span class="input-group-btn">
+                                  <button class="btn btn-default" type="button" id="togglePassword"><i
+                                          class="fa fa-eye"></i></button>
+                              </span>
+                          </div>
+  
+                          <label>年龄</label>
+                          <input type="number" class="form-control" placeholder="年龄" name="age">
+                          <label>账户余额</label>
+                          <input type="number" step="0.01" class="form-control" placeholder="账户余额" name="account">
+  
+                          <!--<label>入职时间</label>
+                          <input type="data" class="form-control" placeholder="入职时间" name="create_time">
+                          <label>所属部门</label>
+                          <input type="text" class="form-control" placeholder="所属部门" name="depart_id">
+                          <label>性别</label>
+                          <input type="text" class="form-control" placeholder="性别" name="gender">-->
+  
+                          <label>入职时间</label>
+                          <input type="datetime-local" name="create_time" class="form-control">
+  
+                          <label>所属部门</label>
+                          <select name="depart" class="form-control">
+                              {% for dept in departments %}
+                                  <option value="{{ dept.id }}">{{ dept.title }}</option>
+                              {% endfor %}
+                          </select>
+  
+                          <label>性别</label>
+                          <div>
+                              {% for value, name in gender_choices %}
+                                  <label class="radio-inline">
+                                      <input type="radio" name="gender" value="{{ value }}"> {{ name }}
+                                  </label>
+                              {% endfor %}
+                          </div>
+                      </div>
+  
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script>
+          document.getElementById('togglePassword').addEventListener('click', function () {
+              let passwordInput = document.getElementById('passwordInput');
+              if (passwordInput.type === "password") {
+                  passwordInput.type = "text";
+              } else {
+                  passwordInput.type = "password";
+              }
+          });
+      </script>
+  {% endblock %}
+  ```
+
+  user_edit.html
+
+  ```html
+  {% extends 'layout.html' %}
+  
+  {% block css %}
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">编辑用户</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post">
+                      {% csrf_token %}
+                      <div class="form-group">
+                          <label>姓名</label>
+                          <input type="text" class="form-control" placeholder="姓名" name="username"
+                                 value="{{ row.name }}">
+  
+                          <label>密码</label>
+                          <div class="input-group">
+                              <input type="password" id="passwordInput" class="form-control" placeholder="密码"
+                                     name="password" value="{{ row.password }}">
+                              <span class="input-group-btn">
+                                  <button class="btn btn-default" type="button" id="togglePassword"><i
+                                          class="fa fa-eye"></i></button>
+                              </span>
+                          </div>
+  
+                          <label>年龄</label>
+                          <input type="number" class="form-control" placeholder="年龄" name="age" value="{{ row.age }}">
+                          <label>账户余额</label>
+                          <input type="number" step="0.01" class="form-control" placeholder="账户余额" name="account"
+                                 value="{{ row.account }}">
+  
+                          <label>入职时间</label>
+                          <input type="datetime-local" name="create_time" class="form-control"
+                                 value="{{ row.create_time|date:'Y-m-d\TH:i' }}">
+  
+                          <label>所属部门</label>
+                          <select name="depart" class="form-control">
+                              {% for dept in departments %}
+                                  <option value="{{ dept.id }}" {% if row.depart.id == dept.id %}selected{% endif %}>
+                                      {{ dept.title }}
+                                  </option>
+                              {% endfor %}
+                          </select>
+  
+                          <label>性别</label>
+                          <div>
+                              {% for value, name in gender_choices %}
+                                  <label class="radio-inline">
+                                      <input type="radio" name="gender" value="{{ value }}"
+                                             {% if row.gender == value %}checked{% endif %}>
+                                      {{ name }}
+                                  </label>
+                              {% endfor %}
+                          </div>
+  
+  
+                      </div>
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script>
+          document.getElementById('togglePassword').addEventListener('click', function () {
+              let passwordInput = document.getElementById('passwordInput');
+              if (passwordInput.type === "password") {
+                  passwordInput.type = "text";
+              } else {
+                  passwordInput.type = "password";
+              }
+          });
+      </script>
+  {% endblock %}
+  ```
+
+  
+
+  
+
+#### django组件 (后续)
+
+- Form组件、ModelForm组件(最方便)
+
+  1 获取用户输入的信息需要校验
+
+  2 遇到错误提示用户
+
+  3 重复代码
+
+  4 关联数据
+
+
+
+- Form组件 (单例代码)
+
+  views.py	
+
+  ```python
+  class MyForm(Form):
+      user = forms.CharField(widget=forms.Input)
+      pwd = form.CharFiled(widget=forms.Input)
+      email = form.CharFiled(widget=forms.Input)
+      account = form.CharFiled(widget=forms.Input)
+      create_time = form.CharFiled(widget=forms.Input)
+      depart = form.CharFiled(widget=forms.Input)
+      gender = form.CharFiled(widget=forms.Input)
+  
+  
+  def user_add(request):
+      if request.method == "GET":
+          form = MyForm()
+          return render(request, 'user_add.html',{"form":form})
+  ```
+
+  
+
   1
 
 
 
 
 
-#### django组件
 
 
 
@@ -1508,18 +2362,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-### 用户管理(原生解)
+### (原生解)
 
 
 

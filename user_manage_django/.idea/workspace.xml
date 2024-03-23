@@ -5,30 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5379c2bd-2012-4de2-af18-9f7cd53f10d5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app01/templates/depart_edit.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/departments_name.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/user_manage_django.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/user_manage_django.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/migrations/0002_department.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/static/img/start.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/static/img/user_head.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app01/templates/depart_add.html" beforeDir="false" afterPath="$PROJECT_DIR$/app01/templates/depart_add.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app01/templates/depart_edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/app01/templates/depart_edit.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app01/templates/depart_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/app01/templates/depart_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app01/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/admin.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/apps.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/migrations/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/models.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/tests.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app02/views.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/user_manage_django/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_manage_django/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/user_manage_django/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_manage_django/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -64,6 +46,9 @@
   "associatedIndex": 7
 }]]></component>
   <component name="ProjectId" id="2e5Lh43PxJNEXoo0SPG63VVrGIN" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="autoscrollFromSource" value="true" />
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -157,7 +142,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1711189608406</updated>
-      <workItem from="1711189610019" duration="4007000" />
+      <workItem from="1711189610019" duration="5704000" />
     </task>
     <servers />
   </component>
