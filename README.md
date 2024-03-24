@@ -32,6 +32,12 @@
 
 ## 基础知识
 
+- 前置
+
+  [bootstrap](https://v3.bootcss.com/css/)
+
+
+
 ### 环境创建
 
 - 安装django
@@ -5177,8 +5183,8 @@
 - django内置超管
 
   ```
-  python manage.py createsuperuser  # 设置账户密码
-  python manage.py changepassword youradminname  # 修改密码
+  python manage.py createsuperuser  # 设置账户密码 zh
+  python manage.py changepassword zh  # 修改密码 h2628733113
   
   ```
 
@@ -5186,29 +5192,107 @@
 
 
 
-#### 管理员静态文件
+#### 表单和静态文件
 
 - 管理员表 
 
   ```
   mkdir app01/templates/myadmin 
-  touch app01/templates/myadmin/admin_list.html app01/templates/myadmin/admin_add.html app01/templates/myadmin/admin_edit.html
+  touch app01/templates/myadmin/admin_list.html 
   touch app01/views/myadmin.py
+  touch app01/utils/encrypt.py
+  
+  touch app01/templates/common/change_page.html app01/templates/error/404.html
+  rm -rf app01/templates/myadmin/admin_add.html app01/templates/myadmin/admin_edit.html
+  rm -rf app01/templates/pretty/pretty_model_form_add.html app01/templates/pretty/pretty_model_form_edit.html
+  
   
   ```
-
-  app01\utils\form.py (表单)
-
+  
+  app01\utils\form.py (表单 两次密码一致 md5加密存储数据库)
+  
   ```python
   class AdminModelForm(BootStrapModelForm):
+      confirm_password = forms.CharField(
+          label='确认密码',
+          widget=forms.PasswordInput(render_value=True)  # 保留原来的输入
+      )
+  
       class Meta:
           model = Admin
-          fields = ['username', "password"]
-          
+          fields = ['username', 'password', 'confirm_password']
+          widgets = {'password': forms.PasswordInput(render_value=True)}
+  
+      def clean_password(self):
+          """密码md5加密后存储到数据库"""
+          pwd = self.cleaned_data.get('password')
+          return md5_str(pwd)
+  
+      def clean_confirm_password(self):
+          """验证两次密码一致"""
+          pwd = self.cleaned_data.get('password')  # c21b074eef9e2e7fe68bd20cfc8a1224
+          confirm = md5_str(self.cleaned_data.get('confirm_password'))
+          if confirm != pwd:
+              raise ValidationError('两次密码不一致')
+          return confirm  # 该字段写入数据库
+  
+  
+  class AdminEditModelForm(BootStrapModelForm):
+      """编辑只允许用户名的修改"""
+  
+      class Meta:
+          model = Admin
+          fields = ['username']
+  
+  
+  class AdminResetModelForm(BootStrapModelForm):
+      confirm_password = forms.CharField(
+          label='确认密码',
+          widget=forms.PasswordInput(render_value=True)  # 保留原来的输入
+      )
+  
+      class Meta:
+          model = Admin
+          fields = ['password', 'confirm_password']
+          widgets = {'password': forms.PasswordInput(render_value=True)}
+  
+      def clean_password(self):
+          """密码md5加密后存储到数据库"""
+          pwd = self.cleaned_data.get('password')
+          pwd_md5 = md5_str(pwd)
+  
+          # 不允许和以前的密码一致 去数据库校验
+          exists = Admin.objects.filter(id=self.instance.pk, password=pwd_md5).exists()
+          if exists:
+              raise ValidationError('重置密码不能和原密码一致')
+  
+          return pwd_md5
+  
+      def clean_confirm_password(self):
+          """验证两次密码一致"""
+          pwd = self.cleaned_data.get('password')  # c21b074eef9e2e7fe68bd20cfc8a1224
+          confirm = md5_str(self.cleaned_data.get('confirm_password'))
+          if confirm != pwd:
+              raise ValidationError('两次密码不一致')
+          return confirm  # 该字段写入数据库
+      
   ```
-
+  
+  app01\utils\encrypt.py
+  
+  ```python
+  import hashlib
+  from django.conf import settings
+  
+  
+  def md5_str(data_string):
+      obj = hashlib.md5(settings.SECRET_KEY.encode('utf-8'))  # 加盐
+      obj.update(data_string.encode('utf-8'))
+      return obj.hexdigest()
+  ```
+  
   layout.html (模板中跳转)
-
+  
   ```html
   
                   <!-- Collect the nav links, forms, and other content for toggling -->
@@ -5220,9 +5304,9 @@
                           <li><a href="/pretty/list/">靓号管理</a></li>
                       </ul>
   ```
-
+  
   admin_list.html (和别的list大同小异)
-
+  
   ```html
   {% extends 'common/layout.html' %}
   
@@ -5245,13 +5329,34 @@
   
   {% block content %}
       <div class="container">
-          <!--按钮-->
-          <div style="margin-bottom: 10px">
-              <a class="btn btn-success" href="/admin/add/">
-                  <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
-                  新建管理员
-              </a>
+  
+          <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <!-- 按钮 -->
+              <div>
+                  <a class="btn btn-success" href="/admin/add/">
+                      <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                      新建管理员
+                  </a>
+              </div>
+  
+              <!-- 搜索框 -->
+              <div style="width: 300px;">
+  
+                  <form method="get">
+                      <div class="input-group">
+                          <input type="text" name="q" class="form-control" placeholder="Search for..."
+                                 value="{{ search_data }}">
+                          <span class="input-group-btn">
+                              <button class="btn btn-default" type="submit">
+                                  <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                              </button>
+                          </span>
+                      </div><!-- /input-group -->
+                  </form>
+  
+              </div>
           </div>
+  
   
           <!--表格 面板-->
           <div class="panel panel-default">
@@ -5273,6 +5378,8 @@
                           <th><font style="vertical-align: inherit;"><font
                                   style="vertical-align: inherit;">密码</font></font></th>
                           <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">重置密码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
                                   style="vertical-align: inherit;">操作</font></font></th>
                       </tr>
                   </thead>
@@ -5284,7 +5391,11 @@
                               <td><font style="vertical-align: inherit;"><font
                                       style="vertical-align: inherit;">{{ admin.username }}</font></font></td>
                               <td><font style="vertical-align: inherit;"><font
-                                      style="vertical-align: inherit;">{{ admin.password }}</font></font></td>
+                                      style="vertical-align: inherit;">**************</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a  href="/admin/{{ admin.id }}/reset/">重置密码</a>
+                              </font></font></td>
                               <td><font style="vertical-align: inherit;"><font
                                       style="vertical-align: inherit;">
                                   <a class="btn btn-primary btn-xs" href="/admin/{{ admin.id }}/edit/">编辑</a>
@@ -5305,9 +5416,9 @@
       </div>
   {% endblock %}
   ```
-
-  admin_add.html
-
+  
+  app01\templates\common\change_page.html (提炼)
+  
   ```html
   {% extends 'common/layout.html' %}
   
@@ -5315,7 +5426,7 @@
       <div class="container">
           <div class="panel panel-default">
               <div class="panel-heading">
-                  <h3 class="panel-title">新建管理员</h3>
+                  <h3 class="panel-title">{{ title }}</h3>
               </div>
               <div class="panel-body">
   
@@ -5338,39 +5449,21 @@
       </div>
   {% endblock %}
   ```
-
-  admin_edit.html
-
+  
+  app01\templates\error\404.html
+  
   ```html
   {% extends 'common/layout.html' %}
   
   {% block content %}
       <div class="container">
-          <div class="panel panel-default">
-              <div class="panel-heading">
-                  <h3 class="panel-title">编辑管理员</h3>
-              </div>
-              <div class="panel-body">
-  
-                  <!--表单-->
-                  <form method="post" novalidate>
-                      {% csrf_token %}
-  
-                      {% for field in form %}
-                          <label>{{ field.label }}</label>
-                          {{ field }}
-                          <span style="color: red;">{{ field.errors.0 }}</span>
-                          <br><br>
-                      {% endfor %}
-  
-                      <button type="submit" class="btn btn-primary">提 交</button>
-                  </form>
-  
-              </div>
-          </div>
+          <div class="alert alert-danger" role="alert">{{ msg }}</div>
       </div>
+  
   {% endblock %}
   ```
+  
+  1
 
 
 
@@ -5408,28 +5501,49 @@
       path("pretty/model/form/<int:nid>/edit/", pretty.pretty_model_form_edit),
   
       # 管理员
-      path("myadmin/list/", myadmin.admin_list),
-      path("myadmin/add/", myadmin.admin_add),
-      path("myadmin/dlt/", myadmin.admin_dlt),
-      path("myadmin/<int:nid>/edit/", myadmin.admin_edit),
+      path("admin/list/", myadmin.admin_list),
+      path("admin/add/", myadmin.admin_add),
+      path("admin/dlt/", myadmin.admin_dlt),
+      path("admin/<int:nid>/edit/", myadmin.admin_edit),
+      path("admin/<int:nid>/reset/", myadmin.reset_pwd),  # 重置密码
   ]
+  
   ```
 
-  myadmin.py
-
+  myadmin.py (扩展字段 重复代码太多了)
+  
   ```python
   from django.shortcuts import render, redirect
   
   from app01.models import Admin
-  from app01.utils.form import AdminModelForm
+  from app01.utils.form import AdminModelForm, AdminEditModelForm, AdminResetModelForm
   from app01.utils.pagination import Pagination
   
   
   def admin_list(request):
       """ 管理员列表 """
-      queryset = Admin.objects.filter()
-      page_object = Pagination(request, queryset, page_size=18)
+  
+      """
+      # 集成分页 没有搜索
+      queryset = Admin.objects.all()
+      page_object = Pagination(request, queryset)
       context = {
+          'list_admin': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+      return render(request, 'myadmin/admin_list.html', context)
+      """
+  
+      # 构造搜索条件
+      data_dict = {}
+      search_data = request.GET.get('q', '')  # 有值拿值 没值空字符串
+      if search_data:  # 考虑空字典情况
+          data_dict['username__contains'] = search_data
+      # 根据搜索条件去数据库获取
+      queryset = Admin.objects.filter(**data_dict)
+      page_object = Pagination(request, queryset)
+      context = {
+          'search_data': search_data,  # 条件筛选
           'list_admin': page_object.page_queryset,  # 分完页的数据
           'page_string': page_object.html()  # 页码
       }
@@ -5438,16 +5552,17 @@
   
   def admin_add(request):
       """ 管理员添加 """
+      title = '新建管理员'
       if request.method == 'GET':
           form = AdminModelForm()
-          return render(request, 'myadmin/admin_add.html', {'form': form})
+          return render(request, 'common/change_page.html', {'form': form, 'title': title})
       # POST
       form = AdminModelForm(data=request.POST)
       if form.is_valid():
           form.save()
           return redirect('/admin/list/')
       # 检验失败
-      return render(request, 'myadmin/admin_add.html', {'form': form})
+      return render(request, 'common/change_page.html', {'form': form, 'title': title})
   
   
   def admin_dlt(request):
@@ -5459,20 +5574,68 @@
   
   def admin_edit(request, nid):
       """ 管理员编辑 """
-      row = Admin.objects.filter(id=nid).first()
+      title = '编辑管理员'
+      row = Admin.objects.filter(id=nid).first()  # 数据库查询：对象、None
+      if not row:
+          return render(request, 'error/404.html', {'msg': '404：请求资源不存在，请检查您的操作'})
+  
+      # 数据库存在该对象
       if request.method == 'GET':
-          form = AdminModelForm(instance=row)
-          return render(request, 'myadmin/admin_edit.html', {'form': form})
+          form = AdminEditModelForm(instance=row)
+          return render(request, 'common/change_page.html', {'form': form, 'title': title})
       # POST
-      form = AdminModelForm(data=request.POST, instance=row)
+      form = AdminEditModelForm(data=request.POST, instance=row)
       if form.is_valid():
           form.save()
           return redirect('/admin/list/')
-      # 不合法数据
-      return render(request, 'myadmin/admin_edit.html', {'form': form})
-  ```
-
   
+      # 不合法数据
+      return render(request, 'common/change_page.html', {'form': form, 'title': title})
+  
+  
+  def reset_pwd(request, nid):
+      """ 不允许查看密码，但允许重置密码 """
+      row = Admin.objects.filter(id=nid).first() 
+      if not row:
+          return render(request, 'error/404.html', {'msg': '404：请求资源不存在，请检查您的操作'})
+  
+      # 数据库存在该对象
+      title = '重置密码 - {}'.format(row.username)
+      if request.method == 'GET':
+          form = AdminResetModelForm()
+          return render(request, 'common/change_page.html', {'form': form, 'title': title})
+      # POST
+      form = AdminResetModelForm(data=request.POST, instance=row)
+      if form.is_valid():
+          form.save()
+          return redirect('/admin/list/')
+  
+      # 不合法数据
+      return render(request, 'common/change_page.html', {'form': form,'title': title})
+  
+  ```
+  
+  
+
+
+
+#### 用户登录
+
+- 前置
+
+  Q：如何保持用户的登录信息？
+
+  http请求：无状态的短链接
+
+  cookie、session
+
+
+
+
+
+
+
+
 
 
 

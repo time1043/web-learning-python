@@ -23,9 +23,9 @@
         <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
             <!-- 按钮 -->
             <div>
-            <a class="btn btn-success" href="/admin/add/">
+                <a class="btn btn-success" href="/admin/add/">
                     <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
-                新建管理员
+                    新建管理员
                 </a>
             </div>
 
@@ -68,6 +68,8 @@
                         <th><font style="vertical-align: inherit;"><font
                                 style="vertical-align: inherit;">密码</font></font></th>
                         <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">重置密码</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
                                 style="vertical-align: inherit;">操作</font></font></th>
                     </tr>
                 </thead>
@@ -79,7 +81,11 @@
                             <td><font style="vertical-align: inherit;"><font
                                     style="vertical-align: inherit;">{{ admin.username }}</font></font></td>
                             <td><font style="vertical-align: inherit;"><font
-                                    style="vertical-align: inherit;">{{ admin.password }}</font></font></td>
+                                    style="vertical-align: inherit;">**************</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">
+                                <a  href="/admin/{{ admin.id }}/reset/">重置密码</a>
+                            </font></font></td>
                             <td><font style="vertical-align: inherit;"><font
                                     style="vertical-align: inherit;">
                                 <a class="btn btn-primary btn-xs" href="/admin/{{ admin.id }}/edit/">编辑</a>

@@ -45,4 +45,5 @@ urlpatterns = [
     path("admin/add/", myadmin.admin_add),
     path("admin/dlt/", myadmin.admin_dlt),
     path("admin/<int:nid>/edit/", myadmin.admin_edit),
+    path("admin/<int:nid>/reset/", myadmin.reset_pwd),  # 重置密码
 ]

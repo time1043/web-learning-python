@@ -4,6 +4,7 @@ from django.core.validators import RegexValidator
 
 from app01.models import UserInfo, PrettyNum, Admin
 from app01.utils.bootstrap import BootStrapModelForm
+from app01.utils.encrypt import md5_str
 
 
 class UserModelForm(BootStrapModelForm):
@@ -57,6 +58,65 @@ class PrettyEditModelForm(BootStrapModelForm):
 
 
 class AdminModelForm(BootStrapModelForm):
+    confirm_password = forms.CharField(
+        label='确认密码',
+        widget=forms.PasswordInput(render_value=True)  # 保留原来的输入
+    )
+
     class Meta:
         model = Admin
-        fields = ['username', "password"]
+        fields = ['username', 'password', 'confirm_password']
+        widgets = {'password': forms.PasswordInput(render_value=True)}
+
+    def clean_password(self):
+        """密码md5加密后存储到数据库"""
+        pwd = self.cleaned_data.get('password')
+        return md5_str(pwd)
+
+    def clean_confirm_password(self):
+        """验证两次密码一致"""
+        pwd = self.cleaned_data.get('password')  # c21b074eef9e2e7fe68bd20cfc8a1224
+        confirm = md5_str(self.cleaned_data.get('confirm_password'))
+        if confirm != pwd:
+            raise ValidationError('两次密码不一致')
+        return confirm  # 该字段写入数据库
+
+
+class AdminEditModelForm(BootStrapModelForm):
+    """编辑只允许用户名的修改"""
+
+    class Meta:
+        model = Admin
+        fields = ['username']
+
+
+class AdminResetModelForm(BootStrapModelForm):
+    confirm_password = forms.CharField(
+        label='确认密码',
+        widget=forms.PasswordInput(render_value=True)  # 保留原来的输入
+    )
+
+    class Meta:
+        model = Admin
+        fields = ['password', 'confirm_password']
+        widgets = {'password': forms.PasswordInput(render_value=True)}
+
+    def clean_password(self):
+        """密码md5加密后存储到数据库"""
+        pwd = self.cleaned_data.get('password')
+        pwd_md5 = md5_str(pwd)
+
+        # 不允许和以前的密码一致 去数据库校验
+        exists = Admin.objects.filter(id=self.instance.pk, password=pwd_md5).exists()
+        if exists:
+            raise ValidationError('重置密码不能和原密码一致')
+
+        return pwd_md5
+
+    def clean_confirm_password(self):
+        """验证两次密码一致"""
+        pwd = self.cleaned_data.get('password')  # c21b074eef9e2e7fe68bd20cfc8a1224
+        confirm = md5_str(self.cleaned_data.get('confirm_password'))
+        if confirm != pwd:
+            raise ValidationError('两次密码不一致')
+        return confirm  # 该字段写入数据库
