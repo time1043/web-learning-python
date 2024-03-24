@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
-from app01.models import UserInfo, PrettyNum
+from app01.models import UserInfo, PrettyNum, Admin
 from app01.utils.bootstrap import BootStrapModelForm
 
 
@@ -54,3 +54,9 @@ class PrettyEditModelForm(BootStrapModelForm):
         if len(txt_mobile) != 11:
             raise ValidationError('手机号码的格式有误')
         return txt_mobile
+
+
+class AdminModelForm(BootStrapModelForm):
+    class Meta:
+        model = Admin
+        fields = ['username', "password"]

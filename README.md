@@ -1,12 +1,8 @@
 # web-learning-python
 
-这是基础性的python-web学习，目前仅包含一个django前后端不分离的项目，后续会有flask、DRF、前后端分离项目的学习。
+- 介绍
 
-
-
-
-
-# user_manage_django
+  这是基础性的python-web学习，目前仅包含一个django前后端不分离的项目，后续会有flask、DRF、前后端分离项目的学习。
 
 - 定位
 
@@ -14,11 +10,21 @@
 
   django：集成很多组件
 
+  DRF
+
+
+
+# user_manage_django
+
+- 展示
+
+  ![](res/Snipaste_2024-03-24_10-31-21.png)
+
 - 参考
 
   [django官方文档](https://docs.djangoproject.com/zh-hans/4.2/)、[博客文章](https://www.cnblogs.com/wupeiqi/)、[交流博客](https://www.xinyan666.fun/article/article_list/)
 
-  [Django 学习小组](https://zhuanlan.zhihu.com/djstudyteam)、[使用Django做个日程管理系统](https://zhuanlan.zhihu.com/p/52991783)
+  [Django学习小组](https://zhuanlan.zhihu.com/djstudyteam)、[Django日程管理系统](https://zhuanlan.zhihu.com/p/52991783)
 
 
 
@@ -942,6 +948,8 @@
 
   ![Snipaste_2023-11-05_11-58-00](res/Snipaste_2023-11-05_11-58-00.png)
 
+  ![Snipaste_2023-11-08_19-51-44](res/Snipaste_2023-11-08_19-51-44.png)
+
   
 
 - models.py (代码集合)
@@ -982,6 +990,12 @@
       level = models.SmallIntegerField(verbose_name='级别', choices=level_choices, default=1)
       status_choices = ((0, '未占用'), (1, '已占用'))
       status = models.SmallIntegerField(verbose_name='状态', choices=status_choices, default=0)
+  
+  
+  class Admin(models.Model):
+      """ 管理员 """
+      username = models.CharField(verbose_name='用户名', max_length=32)
+      password = models.CharField(verbose_name='密码', max_length=63)
   
   ```
 
@@ -4828,7 +4842,7 @@
 
 
 
-#### 代码集合
+#### 代码集合 (部分)
 
 - 重构项目
 
@@ -5160,6 +5174,308 @@
 
 ### 用户认证和权限相关
 
+- django内置超管
+
+  ```
+  python manage.py createsuperuser  # 设置账户密码
+  python manage.py changepassword youradminname  # 修改密码
+  
+  ```
+
+  
+
+
+
+#### 管理员静态文件
+
+- 管理员表 
+
+  ```
+  mkdir app01/templates/myadmin 
+  touch app01/templates/myadmin/admin_list.html app01/templates/myadmin/admin_add.html app01/templates/myadmin/admin_edit.html
+  touch app01/views/myadmin.py
+  
+  ```
+
+  app01\utils\form.py (表单)
+
+  ```python
+  class AdminModelForm(BootStrapModelForm):
+      class Meta:
+          model = Admin
+          fields = ['username', "password"]
+          
+  ```
+
+  layout.html (模板中跳转)
+
+  ```html
+  
+                  <!-- Collect the nav links, forms, and other content for toggling -->
+                  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                      <ul class="nav navbar-nav">
+                          <li><a href="/admin/list/">管理员</a></li>
+                          <li><a href="/depart/list/">部门管理</a></li>
+                          <li><a href="/user/list/">用户管理</a></li>
+                          <li><a href="/pretty/list/">靓号管理</a></li>
+                      </ul>
+  ```
+
+  admin_list.html (和别的list大同小异)
+
+  ```html
+  {% extends 'common/layout.html' %}
+  
+  {% block css %}
+      <style>
+          .panel {
+              margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+          }
+  
+          .fixed-pagination {
+              position: fixed;
+              bottom: 0;
+              left: 50%; /* 把左边位置设置为视窗的50% */
+              transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+              background-color: transparent;
+              padding: 10px 0;
+          }
+      </style>
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <!--按钮-->
+          <div style="margin-bottom: 10px">
+              <a class="btn btn-success" href="/admin/add/">
+                  <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                  新建管理员
+              </a>
+          </div>
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  管理员列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">用户名</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">密码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for admin in list_admin %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ admin.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ admin.username }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ admin.password }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs" href="/admin/{{ admin.id }}/edit/">编辑</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/admin/dlt/?nid={{ admin.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+          <!--分页控件-->
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  admin_add.html
+
+  ```html
+  {% extends 'common/layout.html' %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">新建管理员</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post" novalidate>
+                      {% csrf_token %}
+  
+                      {% for field in form %}
+                          <label>{{ field.label }}</label>
+                          {{ field }}
+                          <span style="color: red;">{{ field.errors.0 }}</span>
+                          <br><br>
+                      {% endfor %}
+  
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  ```
+
+  admin_edit.html
+
+  ```html
+  {% extends 'common/layout.html' %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">编辑管理员</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post" novalidate>
+                      {% csrf_token %}
+  
+                      {% for field in form %}
+                          <label>{{ field.label }}</label>
+                          {{ field }}
+                          <span style="color: red;">{{ field.errors.0 }}</span>
+                          <br><br>
+                      {% endfor %}
+  
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  ```
+
+
+
+#### 注册路由和视图函数
+
+- 注册路由和视图函数
+
+  urls.py
+
+  ```python
+  from django.contrib import admin
+  from django.urls import path
+  
+  from app01.views import depart, user, pretty, myadmin
+  
+  urlpatterns = [
+      # path('admin/', admin.site.urls),
+  
+      # 部门管理
+      path("depart/list/", depart.depart_list),
+      path("depart/add/", depart.depart_add),
+      path("depart/dlt/", depart.depart_dlt),
+      path("depart/<int:nid>/edit/", depart.depart_edit),
+  
+      # 用户管理
+      path("user/list/", user.user_list),
+      path("user/dlt/", user.user_dlt),
+      path("user/model/form/add/", user.user_model_form_add),
+      path("user/model/form/<int:nid>/edit/", user.user_model_form_edit),
+  
+      # 靓号管理
+      path("pretty/list/", pretty.pretty_list),
+      path("pretty/model/form/add/", pretty.pretty_model_form_add),
+      path("pretty/dlt/", pretty.pretty_dlt),
+      path("pretty/model/form/<int:nid>/edit/", pretty.pretty_model_form_edit),
+  
+      # 管理员
+      path("myadmin/list/", myadmin.admin_list),
+      path("myadmin/add/", myadmin.admin_add),
+      path("myadmin/dlt/", myadmin.admin_dlt),
+      path("myadmin/<int:nid>/edit/", myadmin.admin_edit),
+  ]
+  ```
+
+  myadmin.py
+
+  ```python
+  from django.shortcuts import render, redirect
+  
+  from app01.models import Admin
+  from app01.utils.form import AdminModelForm
+  from app01.utils.pagination import Pagination
+  
+  
+  def admin_list(request):
+      """ 管理员列表 """
+      queryset = Admin.objects.filter()
+      page_object = Pagination(request, queryset, page_size=18)
+      context = {
+          'list_admin': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+      return render(request, 'myadmin/admin_list.html', context)
+  
+  
+  def admin_add(request):
+      """ 管理员添加 """
+      if request.method == 'GET':
+          form = AdminModelForm()
+          return render(request, 'myadmin/admin_add.html', {'form': form})
+      # POST
+      form = AdminModelForm(data=request.POST)
+      if form.is_valid():
+          form.save()
+          return redirect('/admin/list/')
+      # 检验失败
+      return render(request, 'myadmin/admin_add.html', {'form': form})
+  
+  
+  def admin_dlt(request):
+      """ 管理员删除 """
+      admin_id = request.GET.get('nid')
+      Admin.objects.filter(id=admin_id).delete()
+      return redirect('/admin/list/')
+  
+  
+  def admin_edit(request, nid):
+      """ 管理员编辑 """
+      row = Admin.objects.filter(id=nid).first()
+      if request.method == 'GET':
+          form = AdminModelForm(instance=row)
+          return render(request, 'myadmin/admin_edit.html', {'form': form})
+      # POST
+      form = AdminModelForm(data=request.POST, instance=row)
+      if form.is_valid():
+          form.save()
+          return redirect('/admin/list/')
+      # 不合法数据
+      return render(request, 'myadmin/admin_edit.html', {'form': form})
+  ```
+
+  
+
+
+
 
 
 
@@ -5170,7 +5486,11 @@
 
 # 项目部署
 
+- BigPicture
 
+  ![](res/Snipaste_2023-11-06_09-58-06.png)
+
+  
 
 
 

@@ -5,23 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5379c2bd-2012-4de2-af18-9f7cd53f10d5" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/app01/migrations/0005_admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app01/templates/myadmin/admin_add.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app01/templates/myadmin/admin_edit.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app01/templates/myadmin/admin_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app01/views/myadmin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/7f9ef4ab-5ae5-439a-b1ba-dde0c9da7eea.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/7f9ef4ab-5ae5-439a-b1ba-dde0c9da7eea.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/7f9ef4ab-5ae5-439a-b1ba-dde0c9da7eea/storage_v2/_src_/schema/forweb2.p5-j1w.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/7f9ef4ab-5ae5-439a-b1ba-dde0c9da7eea/storage_v2/_src_/schema/forweb2.p5-j1w.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app01/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/depart_add.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/depart_edit.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/depart_list.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/layout.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/user_add.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/user_edit.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/user_list.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/user_model_form_add.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/user_model_form_edit.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/views.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app01/templates/common/layout.html" beforeDir="false" afterPath="$PROJECT_DIR$/app01/templates/common/layout.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app01/utils/form.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/utils/form.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/user_manage_django/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_manage_django/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/generate_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/generate_data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -153,7 +147,7 @@
       <option name="presentableId" value="Default" />
       <updated>1711189608406</updated>
       <workItem from="1711189610019" duration="7966000" />
-      <workItem from="1711234568171" duration="11038000" />
+      <workItem from="1711234568171" duration="16271000" />
     </task>
     <servers />
   </component>

@@ -1,0 +1,101 @@
+{% extends 'common/layout.html' %}
+
+{% block css %}
+    <style>
+        .panel {
+            margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+        }
+
+        .fixed-pagination {
+            position: fixed;
+            bottom: 0;
+            left: 50%; /* 把左边位置设置为视窗的50% */
+            transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+            background-color: transparent;
+            padding: 10px 0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <!-- 按钮 -->
+            <div>
+            <a class="btn btn-success" href="/admin/add/">
+                    <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                新建管理员
+                </a>
+            </div>
+
+            <!-- 搜索框 -->
+            <div style="width: 300px;">
+
+                <form method="get">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Search for..."
+                               value="{{ search_data }}">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="submit">
+                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            </button>
+                        </span>
+                    </div><!-- /input-group -->
+                </form>
+
+            </div>
+        </div>
+
+
+        <!--表格 面板-->
+        <div class="panel panel-default">
+            <!-- Default panel contents -->
+            <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                    style="vertical-align: inherit;">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                管理员列表
+            </font></font></div>
+
+            <!-- Table -->
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">ID</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">用户名</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">密码</font></font></th>
+                        <th><font style="vertical-align: inherit;"><font
+                                style="vertical-align: inherit;">操作</font></font></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in list_admin %}
+                        <tr>
+                            <th scope="row"><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ admin.id }}</font></font></th>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ admin.username }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">{{ admin.password }}</font></font></td>
+                            <td><font style="vertical-align: inherit;"><font
+                                    style="vertical-align: inherit;">
+                                <a class="btn btn-primary btn-xs" href="/admin/{{ admin.id }}/edit/">编辑</a>
+                                <a class="btn btn-danger btn-xs"
+                                   href="/admin/dlt/?nid={{ admin.id }}">删除</a>
+                            </font></font></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!--分页控件-->
+        <ul class="pagination">
+            {{ page_string }}
+        </ul>
+
+    </div>
+{% endblock %}
