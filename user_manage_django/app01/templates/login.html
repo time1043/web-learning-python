@@ -42,6 +42,19 @@
                     <span style="color: red">{{ form.password.errors.0 }}</span>
                 </div>
 
+                <div class="form-group">
+                    <label for="id_code">图片验证码</label>
+                    <div class="row">
+                        <div class="col-xs-6">
+                            {{ form.code }}
+                            <span style="color: red">{{ form.code.errors.0 }}</span>
+                        </div>
+                        <div class="col-xs-6">
+                            <img id="image_code" src="/image/code/" style="width: 120px">
+                        </div>
+                    </div>
+                </div>
+
                 <input type="submit" value="登 录" class="btn btn-primary">
             </form>
         </div>

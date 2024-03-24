@@ -7,18 +7,6 @@ from app01.utils.pagination import Pagination
 
 def admin_list(request):
     """ 管理员列表 """
-
-    """
-    # 集成分页 没有搜索
-    queryset = Admin.objects.all()
-    page_object = Pagination(request, queryset)
-    context = {
-        'list_admin': page_object.page_queryset,  # 分完页的数据
-        'page_string': page_object.html()  # 页码
-    }
-    return render(request, 'myadmin/admin_list.html', context)
-    """
-
     # 构造搜索条件
     data_dict = {}
     search_data = request.GET.get('q', '')  # 有值拿值 没值空字符串
@@ -96,4 +84,4 @@ def reset_pwd(request, nid):
         return redirect('/admin/list/')
 
     # 不合法数据
-    return render(request, 'common/change_page.html', {'form': form,'title': title})
+    return render(request, 'common/change_page.html', {'form': form, 'title': title})

@@ -126,6 +126,7 @@ class LoginForm(BootStrapForm):
     """登录功能的表单，不用增删改查，只需要单纯的数据库校验"""
     username = forms.CharField(label='用户名', widget=forms.TextInput, required=True)
     password = forms.CharField(label='密码', widget=forms.PasswordInput(render_value=True), required=True)
+    code = forms.CharField(label='验证码', widget=forms.TextInput, required=True)
 
     def clean_password(self):
         pwd = self.cleaned_data.get('password')

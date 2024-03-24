@@ -22,7 +22,7 @@
 
 - 参考
 
-  [django官方文档](https://docs.djangoproject.com/zh-hans/4.2/)、[博客文章](https://www.cnblogs.com/wupeiqi/)、[交流博客](https://www.xinyan666.fun/article/article_list/)
+  [django官方文档](https://docs.djangoproject.com/zh-hans/4.2/)、[博客文章](https://www.cnblogs.com/wupeiqi/)、[交流博客](https://www.xinyan666.fun/article/article_list/)、[沛齐博客](https://www.cnblogs.com/wupeiqi/articles/5812291.html)
 
   [Django学习小组](https://zhuanlan.zhihu.com/djstudyteam)、[Django日程管理系统](https://zhuanlan.zhihu.com/p/52991783)
 
@@ -5679,7 +5679,7 @@
   
           # 校验正确：网站生成字符串，写到用户浏览器的cookie中，并且写道服务端的session中 (django封装)
           request.session['info'] = {'id': admin_obj.id, 'name': admin_obj.username}
-          return redirect('/admin/list/')  # 登录成功后重定向  select * from django_session; 
+          return redirect('/admin/list/')  # 登录成功后重定向  select * from django_session;
   
       return render(request, 'login.html', {'form': form})
   
@@ -5766,11 +5766,457 @@
 
   
 
-#### 未登录的拦截
+#### 未登录的拦截 (中间件)
 
 - 在 `admin/list/` 判断是否有cookie信息
 
+  要写的太多了
 
+  ```python
+  
+      # 检查用户是否登录 未登录则跳转回登录页面 (django封装)
+      info = request.session.get('info')
+      if not info:
+          return redirect('/login')
+          
+  ```
+
+  
+
+- django有组件实现 (在所有视图函数前面统一判断)
+
+  ![Snipaste_2024-03-24_19-39-57](res/Snipaste_2024-03-24_19-39-57.png)
+
+  ```
+  mkdir app01/middleware
+  touch app01/middleware/auth.py
+  
+  ```
+
+  编写类 (demo)
+
+  ```
+  from django.utils.deprecation import MiddlewareMixin
+  from django.shortcuts import HttpResponse
+  
+  class M1(MiddlewareMixin):
+      """ 中间件1 """
+  
+      def process_request(self, request):
+  
+          # 如果方法中没有返回值（返回None），继续向后走
+          # 如果有返回值 HttpResponse、render 、redirect
+          
+          print("M1.process_request")
+          return HttpResponse("无权访问")
+  
+      def process_response(self, request, response):
+          print("M1.process_response")
+          return response
+  
+  
+  class M2(MiddlewareMixin):
+      """ 中间件2 """
+  
+      def process_request(self, request):
+          print("M2.process_request")
+  
+      def process_response(self, request, response):
+          print("M2.process_response")
+          return response
+  ```
+
+  注册中间件 (demo)
+
+  ```
+  MIDDLEWARE = [
+      'django.middleware.security.SecurityMiddleware',
+      'django.contrib.sessions.middleware.SessionMiddleware',
+      'django.middleware.common.CommonMiddleware',
+      'django.middleware.csrf.CsrfViewMiddleware',
+      'django.contrib.auth.middleware.AuthenticationMiddleware',
+      'django.contrib.messages.middleware.MessageMiddleware',
+      'django.middleware.clickjacking.XFrameOptionsMiddleware',
+      'app01.middleware.auth.M1',
+      'app01.middleware.auth.M2',
+  ]
+  ```
+
+  
+
+- 未登录拦截
+
+  user_manage_django\app01\middleware\auth.py
+
+  ```python
+  from django.shortcuts import redirect
+  from django.utils.deprecation import MiddlewareMixin
+  
+  
+  class AuthMiddleware(MiddlewareMixin):
+      def process_request(self, request):
+          """ 拦截未登录 """
+          if request.path_info in ['/login/', '/image/code/']:
+              return  # 未登录能访问的
+  
+          info_dict = request.session.get('info')
+          if info_dict:
+              return  # 有登录信息的通过
+  
+          return redirect('/login/')  # 没登陆信息的去登录页面
+  
+  ```
+
+  ```python
+  MIDDLEWARE = [
+      'app01.middleware.auth.AuthMiddleware'
+  
+  ```
+
+  
+
+- 注销 (清除cookie)
+
+  路由注册
+
+  ```python
+      # 登录
+      path("login/", account.login),
+      path("logout/", account.logout),
+  ```
+
+  视图函数
+
+  ```python
+  def logout(request):
+      """ 注销 """
+      request.session.clear()
+      return redirect('/login/')
+  ```
+
+  html页面
+
+  ```html
+                                  <li><a href="/logout/">注销</a></li>
+  ```
+
+- 当前用户显示
+
+  ```html
+                                 aria-haspopup="true" aria-expanded="false">{{ request.session.info.name }} <span class="caret"></span></a>
+  ```
+
+  
+
+
+
+#### 图片验证码 (防止暴力破解)
+
+- 生成图片
+
+  ```
+  pip install pillow
+  touch app01/utils/check_code.py
+  
+  ```
+
+  注册路由
+
+  ```python
+      # 登录
+      path("login/", account.login),
+      path("logout/", account.logout),
+      path("image/code/", account.image_code),
+  
+  ```
+
+  视图函数
+
+  ```python
+  from io import BytesIO
+  
+  from django.http import HttpResponse
+  from django.shortcuts import render, redirect
+  
+  from app01.models import Admin
+  from app01.utils.check_code import create_check_code
+  from app01.utils.form import LoginForm
+  
+  
+  def login(request):
+      """ 登录功能 """
+      if request.method == 'GET':
+          form = LoginForm()
+          return render(request, 'login.html', {'form': form})
+      # POST
+      form = LoginForm(data=request.POST)
+      if form.is_valid():
+  
+          # 验证码校验
+          user_input_code = form.cleaned_data.pop('code')  # **form.cleaned_data
+          image_code = request.session.get('image_code')  # 可能为空 60s
+          if not image_code:
+              form.add_error('code', '验证码超时')
+              return render(request, 'login.html', {'form': form})
+          if user_input_code.upper() != image_code.upper():  # 忽略大小写
+              form.add_error('code', '验证码错误')
+              return render(request, 'login.html', {'form': form})
+  
+          # 数据库校验
+          admin_obj = Admin.objects.filter(**form.cleaned_data).first()  # dic
+          if not admin_obj:
+              form.add_error('password', '用户名或密码错误')
+              return render(request, 'login.html', {'form': form})
+  
+          # 校验正确：网站生成字符串，写到用户浏览器的cookie中，并且写道服务端的session中 (django封装)
+          request.session['info'] = {'id': admin_obj.id, 'name': admin_obj.username}
+          request.session.set_expiry(60 * 60 * 34 * 7)  # 7天有效
+          return redirect('/admin/list/')  # 登录成功后重定向  select * from django_session;
+  
+      return render(request, 'login.html', {'form': form})
+  
+  
+  def logout(request):
+      """ 注销 """
+      request.session.clear()
+      return redirect('/login/')
+  
+  
+  def image_code(request):
+      """ 动态生成图片验证码 """
+      img, code_str = create_check_code()
+      request.session['image_code'] = code_str  # 后续需要校验 先写入session
+      request.session.set_expiry(60)  # 设置60s超时
+  
+      # 不写入磁盘 而是在内存
+      stream = BytesIO()
+      img.save(stream, 'png')
+      stream.getvalue()
+  
+      return HttpResponse(stream.getvalue())
+  
+  ```
+
+  html页面
+
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>Title</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+          <style>
+              .account {
+                  width: 400px;
+                  border: 1px solid #dddddd;
+                  border-radius: 5px;
+                  box-shadow: 5px 5px 20px #aaa;
+  
+                  margin-left: auto;
+                  margin-right: auto;
+                  margin-top: 100px;
+                  padding: 20px 40px;
+              }
+  
+              .account h2 {
+                  margin-top: 10px;
+                  text-align: center;
+              }
+          </style>
+      </head>
+  
+  
+      <body>
+          <div class="account">
+              <h2>用户登录</h2>
+              <form method="post" novalidate>
+                  {% csrf_token %}
+                  <div class="form-group">
+                      <label>用户名</label>
+                      {{ form.username }}
+                      <span style="color: red">{{ form.username.errors.0 }}</span>
+                  </div>
+                  <div class="form-group">
+                      <label>密码</label>
+                      {{ form.password }}
+                      <span style="color: red">{{ form.password.errors.0 }}</span>
+                  </div>
+  
+                  <div class="form-group">
+                      <label for="id_code">图片验证码</label>
+                      <div class="row">
+                          <div class="col-xs-6">
+                              {{ form.code }}
+                              <span style="color: red">{{ form.code.errors.0 }}</span>
+                          </div>
+                          <div class="col-xs-6">
+                              <img id="image_code" src="/image/code/" style="width: 120px">
+                          </div>
+                      </div>
+                  </div>
+  
+                  <input type="submit" value="登 录" class="btn btn-primary">
+              </form>
+          </div>
+  
+      </body>
+  </html>
+  
+  ```
+
+  表单
+
+  ```python
+  class LoginForm(BootStrapForm):
+      """登录功能的表单，不用增删改查，只需要单纯的数据库校验"""
+      username = forms.CharField(label='用户名', widget=forms.TextInput, required=True)
+      password = forms.CharField(label='密码', widget=forms.PasswordInput(render_value=True), required=True)
+      code = forms.CharField(label='验证码', widget=forms.TextInput, required=True)
+  
+      def clean_password(self):
+          pwd = self.cleaned_data.get('password')
+          return md5_str(pwd)
+  ```
+
+  app01\utils\check_code.py  [沛齐博客](https://www.cnblogs.com/wupeiqi/articles/5812291.html)
+
+  ```python
+  import random
+  from PIL import Image, ImageDraw, ImageFont, ImageFilter
+  
+  
+  def create_check_code(width=120, height=30, char_length=5, font_file='Monaco.ttf', font_size=28):
+      code = []
+      img = Image.new(mode='RGB', size=(width, height), color=(255, 255, 255))  # 图片
+      draw = ImageDraw.Draw(img, mode='RGB')  # 画笔
+  
+      def rndChar():
+          """ 生成随机字母 """
+          return chr(random.randint(65, 90))
+  
+      def rndColor():
+          """ 生成随机颜色 """
+          return (random.randint(0, 255), random.randint(10, 255), random.randint(64, 255))
+  
+      # 写文字
+      font = ImageFont.truetype(font_file, font_size)
+      for i in range(char_length):
+          char = rndChar()
+          code.append(char)
+          h = random.randint(0, 4)
+          draw.text([i * width / char_length, h], char, font=font, fill=rndColor())
+  
+      # 写干扰点
+      for i in range(40):
+          draw.point([random.randint(0, width), random.randint(0, height)], fill=rndColor())
+  
+      # 写干扰圆圈
+      for i in range(40):
+          draw.point([random.randint(0, width), random.randint(0, height)], fill=rndColor())
+          x = random.randint(0, width)
+          y = random.randint(0, height)
+          draw.arc((x, y, x + 4, y + 4), 0, 90, fill=rndColor())
+  
+      # 画干扰线
+      for i in range(5):
+          x1 = random.randint(0, width)
+          y1 = random.randint(0, height)
+          x2 = random.randint(0, width)
+          y2 = random.randint(0, height)
+  
+          draw.line((x1, y1, x2, y2), fill=rndColor())
+  
+      img = img.filter(ImageFilter.EDGE_ENHANCE_MORE)
+      return img, ''.join(code)
+  
+  
+  if __name__ == '__main__':
+      img, code_str = create_check_code()
+      print(code_str)
+  
+      with open('../static/img/code.png', 'wb') as f:
+          img.save(f, format='png')
+  
+  ```
+
+  
+
+### 任务管理
+
+#### ajax请求
+
+- 需求
+
+  浏览器向网站发送请求时：URL 和 表单的形式提交 (GET、POST)  - 页面刷新
+
+  不想页面刷新、偷偷地向后台发请求 (ajax 依赖jQuery)
+
+  ```
+  $.ajax({
+      url:"发送的地址",
+      type:"get",
+      data:{
+          n1:123,
+          n2:456
+      },
+      success:function(res){
+          console.log(res);
+      }
+  })
+  ```
+
+  GET请求
+
+  ```
+  $.ajax({
+      url: '/task/ajax/',
+      type: "get",
+      data: {
+          n1: 123,
+          n2: 456
+      },
+      success: function (res) {
+          console.log(res);
+      }
+  })
+  
+  
+  from django.shortcuts import render, HttpResponse
+  
+  def task_ajax(request):
+      print(request.GET)
+      return HttpResponse("成功了")
+  ```
+
+  POST请求
+
+  ```
+  $.ajax({
+      url: '/task/ajax/',
+      type: "get",
+      data: {
+          n1: 123,
+          n2: 456
+      },
+      success: function (res) {
+          console.log(res);
+      }
+  })
+  
+  
+  from django.shortcuts import render, HttpResponse
+  from django.views.decorators.csrf import csrf_exempt
+  
+  @csrf_exempt
+  def task_ajax(request):
+      print(request.GET)
+      print(request.POST)
+      return HttpResponse("成功了")
+  ```
+
+  1
 
 
 
