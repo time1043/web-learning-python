@@ -5,17 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5379c2bd-2012-4de2-af18-9f7cd53f10d5" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/7f9ef4ab-5ae5-439a-b1ba-dde0c9da7eea.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/7f9ef4ab-5ae5-439a-b1ba-dde0c9da7eea.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/myadmin/admin_add.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/myadmin/admin_edit.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/myadmin/admin_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/app01/templates/myadmin/admin_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/pretty/pretty_model_form_add.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/templates/pretty/pretty_model_form_edit.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app01/utils/bootstrap.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/utils/bootstrap.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app01/utils/form.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/utils/form.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/views/myadmin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/views/myadmin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app01/views/pretty.py" beforeDir="false" afterPath="$PROJECT_DIR$/app01/views/pretty.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/user_manage_django/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_manage_django/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -149,7 +142,7 @@
       <updated>1711189608406</updated>
       <workItem from="1711189610019" duration="7966000" />
       <workItem from="1711234568171" duration="17163000" />
-      <workItem from="1711260139556" duration="8282000" />
+      <workItem from="1711260139556" duration="12669000" />
     </task>
     <servers />
   </component>

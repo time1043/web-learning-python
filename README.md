@@ -4483,10 +4483,10 @@
   app01\utils\bootstrap.py
 
   ```python
-  from django.forms import ModelForm
+  from django.forms import ModelForm, Form
   
   
-  class BootStrapModelForm(ModelForm):
+  class BootStrap:
       def __init__(self, *args, **kwargs):
           super().__init__(*args, **kwargs)
           # 循环ModelForm中的所有字段，给每个字段的插件设置
@@ -4500,6 +4500,14 @@
                       "class": "form-control",
                       "placeholder": field.label
                   }
+  
+  
+  class BootStrapModelForm(BootStrap, ModelForm):
+      pass
+  
+  
+  class BootStrapForm(BootStrap, Form):
+      pass
   
   ```
 
@@ -5621,13 +5629,146 @@
 
 #### 用户登录
 
-- 前置
-
-  Q：如何保持用户的登录信息？
+- Q：如何保持用户的登录信息？
 
   http请求：无状态的短链接
 
   cookie、session
+
+  ![Snipaste_2024-03-24_16-29-20](res/Snipaste_2024-03-24_16-29-20.png)
+
+- 注册路由和视图函数
+
+  ```
+  touch app01/views/account.py
+  touch app01/templates/login.html
+  
+  ```
+
+  urls.py
+
+  ```python
+      # 登录
+      path("login/", account.login),
+  
+  ```
+
+  app01\views\account.py
+
+  ```python
+  from django.shortcuts import render, redirect
+  
+  from app01.models import Admin
+  from app01.utils.form import LoginForm
+  
+  
+  def login(request):
+      """ 登录功能 """
+      if request.method == 'GET':
+          form = LoginForm()
+          return render(request, 'login.html', {'form': form})
+      # POST
+      form = LoginForm(data=request.POST)
+      if form.is_valid():
+  
+          # 数据库校验
+          admin_obj = Admin.objects.filter(**form.cleaned_data).first()  # dic
+          if not admin_obj:
+              form.add_error('password', '用户名或密码错误')
+              return render(request, 'login.html', {'form': form})
+  
+          # 校验正确：网站生成字符串，写到用户浏览器的cookie中，并且写道服务端的session中 (django封装)
+          request.session['info'] = {'id': admin_obj.id, 'name': admin_obj.username}
+          return redirect('/admin/list/')  # 登录成功后重定向  select * from django_session; 
+  
+      return render(request, 'login.html', {'form': form})
+  
+  ```
+
+  app01\utils\form.py
+
+  ```python
+  class LoginForm(BootStrapForm):
+      """登录功能的表单，不用增删改查，只需要单纯的数据库校验"""
+      username = forms.CharField(label='用户名', widget=forms.TextInput, required=True)
+      password = forms.CharField(label='密码', widget=forms.PasswordInput(render_value=True), required=True)
+  
+      def clean_password(self):
+          pwd = self.cleaned_data.get('password')
+          return md5_str(pwd)
+      
+  
+  """
+  # 也可以用ModelForm 
+  class LoginModelForm(forms.ModelForm):
+      class Meta:
+          model = Admin
+          fields = ['username', 'password']
+  """
+  
+  ```
+
+  app01\templates\login.html
+
+  ```html
+  {% load static %}
+  <!DOCTYPE html>
+  <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>Title</title>
+          <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+          <style>
+              .account {
+                  width: 400px;
+                  border: 1px solid #dddddd;
+                  border-radius: 5px;
+                  box-shadow: 5px 5px 20px #aaa;
+  
+                  margin-left: auto;
+                  margin-right: auto;
+                  margin-top: 100px;
+                  padding: 20px 40px;
+              }
+  
+              .account h2 {
+                  margin-top: 10px;
+                  text-align: center;
+              }
+          </style>
+      </head>
+  
+  
+      <body>
+          <div class="account">
+              <h2>用户登录</h2>
+              <form method="post" novalidate>
+                  {% csrf_token %}
+                  <div class="form-group">
+                      <label>用户名</label>
+                      {{ form.username }}
+                      <span style="color: red">{{ form.username.errors.0 }}</span>
+                  </div>
+                  <div class="form-group">
+                      <label>密码</label>
+                      {{ form.password }}
+                      <span style="color: red">{{ form.password.errors.0 }}</span>
+                  </div>
+  
+                  <input type="submit" value="登 录" class="btn btn-primary">
+              </form>
+          </div>
+  
+      </body>
+  </html>
+  
+  ```
+
+  
+
+#### 未登录的拦截
+
+- 在 `admin/list/` 判断是否有cookie信息
 
 
 

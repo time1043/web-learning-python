@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
 from app01.models import UserInfo, PrettyNum, Admin
-from app01.utils.bootstrap import BootStrapModelForm
+from app01.utils.bootstrap import BootStrapModelForm, BootStrapForm
 from app01.utils.encrypt import md5_str
 
 
@@ -120,3 +120,13 @@ class AdminResetModelForm(BootStrapModelForm):
         if confirm != pwd:
             raise ValidationError('两次密码不一致')
         return confirm  # 该字段写入数据库
+
+
+class LoginForm(BootStrapForm):
+    """登录功能的表单，不用增删改查，只需要单纯的数据库校验"""
+    username = forms.CharField(label='用户名', widget=forms.TextInput, required=True)
+    password = forms.CharField(label='密码', widget=forms.PasswordInput(render_value=True), required=True)
+
+    def clean_password(self):
+        pwd = self.cleaned_data.get('password')
+        return md5_str(pwd)
