@@ -23,3 +23,13 @@ class UserInfo(models.Model):
 
     gender_choices = ((1, '男'), (0, '女'))  # 性别不会增减  字节占用少  django约束
     gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices)
+
+
+class PrettyNum(models.Model):
+    """ 靓号表 """
+    mobile = models.CharField(verbose_name='手机号码', max_length=11)  # 允许为空  null=True blank=True
+    price = models.DecimalField(verbose_name='价格', default=0, max_digits=7, decimal_places=2)
+    level_choices = ((1, '初级'), (2, '中级'), (3, '高级'))
+    level = models.SmallIntegerField(verbose_name='级别', choices=level_choices, default=1)
+    status_choices = ((0, '未占用'), (1, '已占用'))
+    status = models.SmallIntegerField(verbose_name='状态', choices=status_choices, default=0)

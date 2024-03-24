@@ -1,7 +1,12 @@
-# user-manage
-这是用户中心项目，可以成为未来许多项目的基础。
+# web-learning-python
+
+这是基础性的python-web学习，目前仅包含一个django前后端不分离的项目，后续会有flask、DRF、前后端分离项目的学习。
 
 
+
+
+
+# user_manage_django
 
 - 定位
 
@@ -32,19 +37,24 @@
   
   pip install django
   
+  
+  # 依赖清单
+  pip freeze > requirements.txt  # 生成依赖项清单
+  pip intall -r requirements.txt  # 读取安装
+  
   ```
   
   python文件结构
   
-
+  
   > 1 python.exe
   >
   > 2 Scripts：pip.exe、创建项目的工具 `django-admin.exe`  // 加入环境变量
   >
   > 3 Lib：内置模块、site-packages(`第三方模块django框架源码`)
-
+  
   创建项目 (命令行 pycharm)
-
+  
   ```
   cd D:\code2\python-code\user-manage-learning
   django-admin startproject user_manage_django
@@ -930,16 +940,20 @@
 
   部门被删除，关联的用户？部门ID列置空  `depart = models.ForeignKey(to='', to_field='', null=True, blank=True, on_delete=models.SET_NULL)`
 
+  ![Snipaste_2023-11-05_11-58-00](res/Snipaste_2023-11-05_11-58-00.png)
+
   
 
-  D:\code2\python-code\user-manage-learning\user_manage_django\app01\models.py (代码集合)
+- models.py (代码集合)
 
   ```python
+  from datetime import datetime
+  
   from django.db import models
   
   
   class Department(models.Model):
-      ''' 部门表 '''
+      """ 部门表 """
       title = models.CharField(verbose_name='标题', max_length=100)
   
       def __str__(self):
@@ -947,17 +961,28 @@
   
   
   class UserInfo(models.Model):
-      ''' 员工表 '''
+      """ 员工表 """
       name = models.CharField(verbose_name='姓名', max_length=16)
       password = models.CharField(verbose_name='密码', max_length=64)
       age = models.IntegerField(verbose_name='年龄')
       account = models.DecimalField(verbose_name='账户余额', max_digits=10, decimal_places=2, default=0)
-      create_time = models.DateTimeField(verbose_name='入职时间')
+      create_time = models.DateTimeField(verbose_name='入职时间', default=datetime.now)
   
       depart = models.ForeignKey(verbose_name='部门', to='Department', to_field='id', on_delete=models.CASCADE)
   
       gender_choices = ((1, '男'), (0, '女'))  # 性别不会增减  字节占用少  django约束
       gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices)
+  
+  
+  class PrettyNum(models.Model):
+      """ 靓号表 """
+      mobile = models.CharField(verbose_name='手机号码', max_length=11)  # 允许为空  null=True blank=True
+      price = models.DecimalField(verbose_name='价格', default=0, max_digits=7, decimal_places=2)
+      level_choices = ((1, '初级'), (2, '中级'), (3, '高级'))
+      level = models.SmallIntegerField(verbose_name='级别', choices=level_choices, default=1)
+      status_choices = ((0, '未占用'), (1, '已占用'))
+      status = models.SmallIntegerField(verbose_name='状态', choices=status_choices, default=0)
+  
   ```
 
   
@@ -1009,7 +1034,6 @@
   D:\code2\python-code\user-manage-learning\user_manage_django\utils\generate_data.py
 
   ```python
-  import datetime
   import os
   import random
   import string
@@ -1017,15 +1041,17 @@
   import django
   from django.utils import timezone
   from faker import Faker
+  from tqdm import tqdm
   
   # 确保在导入任何Django模块之前设置环境变量和初始化Django
   os.environ.setdefault("DJANGO_SETTINGS_MODULE", "user_manage_django.settings")
   django.setup()
   
-  from app01.models import Department, UserInfo
+  from app01.models import Department, UserInfo, PrettyNum
   
   
   def create_data_to_department():
+      """ 生成 Department 表的数据 """
       # 读取文件
       department_names = []
       with open('departments_name.txt', 'r', encoding='utf-8') as file:
@@ -1035,13 +1061,6 @@
       # 添加到数据库中
       for dept in department_names:
           Department.objects.create(title=dept)
-  
-  
-  """
-  def generate_random_password(length=8):
-      characters = string.ascii_letters + string.digits
-      return ''.join(random.choice(characters) for i in range(length))
-  """
   
   
   def generate_random_password(length=8):
@@ -1063,7 +1082,8 @@
   
   
   def create_data_to_userinfo(count):
-      for _ in range(count):
+      """ 生成 UserInfo 表的数据 """
+      for _ in tqdm(range(count), desc="Generating data of UserInfo"):
           naive_datetime = fake.date_time_this_decade(before_now=True, after_now=False, tzinfo=None)  # 无时区信息
           aware_datetime = timezone.make_aware(naive_datetime, timezone.get_default_timezone())  # 转换为有时区信息的对象
   
@@ -1079,13 +1099,35 @@
           user.save()
   
   
+  def generate_pretty_num_data():
+      mobile = fake.phone_number()  # 随机电话号码
+      price = round(random.uniform(0, 10000), 2)  # 随机价格区间
+      level = random.choice([1, 2, 3])  # 随机选择一个级别
+      status = random.choice([0, 1])  # 随机选择一个状态
+      return {
+          "mobile": mobile,
+          "price": price,
+          "level": level,
+          "status": status
+      }
+  
+  
+  def create_data_to_prettynum(count):
+      """ 生成 PrettyNum 表的数据 """
+      for _ in tqdm(range(count), desc="Generating data of PrettyNum"):
+          data = generate_pretty_num_data()
+          pretty_num = PrettyNum(**data)
+          pretty_num.save()
+  
+  
   if __name__ == '__main__':
       fake = Faker('zh_CN')
       create_data_to_department()
       create_data_to_userinfo(1000)
+      create_data_to_prettynum(1000)
   
   ```
-
+  
   
 
 #### 静态文件和模板文件
@@ -2902,7 +2944,7 @@
 
   模板
 
-  user_list2.html
+  user_list.html
 
   ```html
   {% extends 'layout.html' %}
@@ -3152,6 +3194,1996 @@
 
 
 ### 靓号管理
+
+- 靓号管理
+
+  靓号列表：url、view；
+
+  - 获取所有的靓号
+
+  - 结合html+render将靓号罗列出来
+
+  新建靓号：url、view(ModelForm)；列表点击跳转：`/pretty/add/`
+
+  - 函数：实例化类的对象、通过render将对象传入到HTML中、模板的循环展示所有的字段。
+
+  - 点击提交：数据校验、保存到数据库、跳转回靓号列表
+
+  删除靓号：url、view；
+
+  编辑靓号：url、view；
+
+  - 根据ID获取当前编辑的对象、ModelForm配合默认显示数据、提交修改。
+
+  
+
+
+
+#### django组件
+
+- 格式校验
+
+  views.py
+
+  ```python
+  # ----------------------------------------------
+  class PrettyModelForm(ModelForm):
+      """
+      # 验证方式1
+      mobile = forms.CharField(
+          label='手机号码',
+          validators=[RegexValidator(regex=r'1[3-9]\d{9}$', message='手机号码的格式有误')]
+      )
+      """
+  
+      class Meta:
+          model = PrettyNum
+          # fields = ['mobile', 'price', 'level', 'status']  # 自定义选择字段
+          # exclude = ['status']   # 排除哪个字段
+          fields = '__all__'  # 所有字段
+  
+      def __init__(self, *args, **kwargs):  # 加上bootstrap样式  初始化
+          super().__init__(*args, **kwargs)
+          for name, field in self.fields.items():
+              field.widget.attrs = {'class': 'form-control', 'placeholder': field.label}
+  
+      # 验证方式2
+      def clean_mobile(self):  # 钩子方法
+          txt_mobile = self.cleaned_data['mobile']
+          if len(txt_mobile) != 11:
+              raise ValidationError('手机号码的格式有误')
+          return txt_mobile
+  ```
+
+  
+
+- 添加：【正则表达式】【手机号不能存在】
+
+  ```python
+  # [obj,obj,obj]
+  queryset = models.PrettyNum.objects.filter(mobile="1888888888")
+  
+  obj = models.PrettyNum.objects.filter(mobile="1888888888").first()
+  
+  # True/False
+  exists = models.PrettyNum.objects.filter(mobile="1888888888").exists()
+  ```
+
+  编辑：【正则表达式】【手机号不能存在】
+
+  ```python
+  排除自己以外，其他的数据是否手机号是否重复？
+  
+  # id!=2 and mobile='1888888888'
+  models.PrettyNum.objects.filter(mobile="1888888888").exclude(id=2)
+  ```
+
+  views.py
+
+  ```python
+  # ----------------------------------------------
+  class PrettyModelForm(ModelForm):
+      class Meta:
+          model = PrettyNum
+          fields = '__all__'  # 所有字段
+  
+      def __init__(self, *args, **kwargs):  # 加上bootstrap样式  初始化
+          super().__init__(*args, **kwargs)
+          for name, field in self.fields.items():
+              field.widget.attrs = {'class': 'form-control', 'placeholder': field.label}
+  
+      def clean_mobile(self):  # 钩子方法
+          txt_mobile = self.cleaned_data['mobile']
+  
+          # 不允许手机号码重复
+          exists = PrettyNum.objects.filter(mobile=txt_mobile).exists()
+          if exists:
+              raise ValidationError('该手机号码已经存在')
+  
+          if len(txt_mobile) != 11:
+              raise ValidationError('手机号码的格式有误')
+          return txt_mobile
+  ```
+
+  ```python
+  # ----------------------------------------------
+  class PrettyEditModelForm(ModelForm):
+      # 在编辑的时候 不允许修改手机号
+      # mobile = forms.CharField(disabled=True, label='手机号码')
+  
+      class Meta:
+          model = PrettyNum
+          fields = ['mobile', 'price', 'level', 'status']  # 自定义选择字段
+  
+      def __init__(self, *args, **kwargs):  # 加上bootstrap样式  初始化
+          super().__init__(*args, **kwargs)
+          for name, field in self.fields.items():
+              field.widget.attrs = {'class': 'form-control', 'placeholder': field.label}
+  
+      def clean_mobile(self):  # 钩子方法
+          txt_mobile = self.cleaned_data['mobile']
+  
+          # 手机号码不允许重复
+          exists = PrettyNum.objects.exclude(id=self.instance.pk).filter(mobile=txt_mobile)  # 当前编辑的那一行id
+          if exists:
+              raise ValidationError('该手机号码已经存在')
+  
+          if len(txt_mobile) != 11:
+              raise ValidationError('手机号码的格式有误')
+          return txt_mobile
+  ```
+
+  
+
+- 搜索框
+
+  ```python
+  models.PrettyNum.objects.filter(mobile="19999999991",id=12)
+  
+  data_dict = {"mobile":"19999999991","id":123}
+  models.PrettyNum.objects.filter(**data_dict)
+  ```
+
+  ```python
+  models.PrettyNum.objects.filter(id=12)       # 等于12
+  models.PrettyNum.objects.filter(id__gt=12)   # 大于12
+  models.PrettyNum.objects.filter(id__gte=12)  # 大于等于12
+  models.PrettyNum.objects.filter(id__lt=12)   # 小于12
+  models.PrettyNum.objects.filter(id__lte=12)  # 小于等于12
+  
+  data_dict = {"id__lte":12}
+  models.PrettyNum.objects.filter(**data_dict)
+  ```
+
+  ```python
+  models.PrettyNum.objects.filter(mobile="999")               # 等于
+  models.PrettyNum.objects.filter(mobile__startswith="1999")  # 筛选出以1999开头
+  models.PrettyNum.objects.filter(mobile__endswith="999")     # 筛选出以999结尾
+  models.PrettyNum.objects.filter(mobile__contains="999")     # 筛选出包含999
+  
+  data_dict = {"mobile__contains":"999"}
+  models.PrettyNum.objects.filter(**data_dict)
+  ```
+
+  views.py
+
+  ```python
+  def pretty_list(request):
+      """ 靓号列表 """
+      # 条件筛选
+      data_dict = {}
+      search_data = request.GET.get('q', '')  # 有值拿值 没值空字符串
+      if search_data:  # 考虑空字典情况
+          data_dict['mobile__contains'] = search_data
+  
+      list_pretty = PrettyNum.objects.filter(**data_dict).order_by('-level')  # 排序
+      paginator = Paginator(list_pretty, 30)
+      page = request.GET.get('page')
+      try:
+          pretties = paginator.page(page)
+      except PageNotAnInteger:
+          pretties = paginator.page(1)
+      except EmptyPage:
+          pretties = paginator.page(paginator.num_pages)
+      return render(request, 'pretty_list3.html', {'pretties': pretties, 'search_data': search_data})  # 上次查询记忆
+  ```
+
+  pretty_list.html
+
+  ```html
+          <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <!-- 按钮 -->
+              <div>
+                  <a class="btn btn-success" href="/pretty/model/form/add/">
+                      <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                      新建靓号mf
+                  </a>
+              </div>
+  
+              <!-- 搜索框 -->
+              <div style="width: 300px;">
+  
+                  <form method="get">
+                      <div class="input-group">
+                          <input type="text" name="q" class="form-control" placeholder="Search for..."
+                                 value="{{ search_data }}">
+                          <span class="input-group-btn">
+                              <button class="btn btn-default" type="submit">
+                                  <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                              </button>
+                          </span>
+                      </div><!-- /input-group -->
+                  </form>
+  
+              </div>
+          </div>
+  ```
+
+  
+
+- 分页功能(原生)
+
+  ```python
+  queryset = models.PrettyNum.objects.all()
+  queryset = models.PrettyNum.objects.filter(id=1)[0:10]
+  
+  # 第1页
+  queryset = models.PrettyNum.objects.all()[0:10]
+  # 第2页
+  queryset = models.PrettyNum.objects.all()[10:20]
+  # 第3页
+  queryset = models.PrettyNum.objects.all()[20:30]
+  ```
+
+  ```python
+  data = models.PrettyNum.objects.all().count()
+  data = models.PrettyNum.objects.filter(id=1).count()
+  ```
+
+  - 分页的逻辑和处理规则
+  - 封装分页类
+    - 从头到尾开发
+    - 写项目用【pagination.py】公共组件。
+  - 小Bug，搜索 + 分页情况下。
+
+  ```
+  分页时候，保留原来的搜索条件
+  
+  http://127.0.0.1:8000/pretty/list/?q=888
+  http://127.0.0.1:8000/pretty/list/?page=1
+  
+  http://127.0.0.1:8000/pretty/list/?q=888&page=23
+  ```
+
+  ```python
+  query_dict = copy.deepcopy(request.GET)
+  query_dict._mutable = True
+  query_dict.setlist('page', [2])  # 在原来的条件上 加新的
+  print(query_dict.urlencode())
+  ```
+
+  views.py
+
+  ```python
+  def pretty_list(request):
+      """ 靓号列表 """
+      # 条件筛选
+      data_dict = {}
+      search_data = request.GET.get('q', '')  # 有值拿值 没值空字符串
+      if search_data:  # 考虑空字典情况
+          data_dict['mobile__contains'] = search_data
+  
+      # 分页功能：根据用户想要访问的页码计算出起止位置
+      page = int(request.GET.get('page', 1))
+      page_size = 20
+      start = (page - 1) * page_size
+      end = page * page_size
+  
+      total_count = PrettyNum.objects.filter(**data_dict).count()  # 计算一共多少条数据
+      total_page_count, div = divmod(total_count, page_size)
+      if div:
+          total_page_count += 1
+  
+      list_pretty = PrettyNum.objects.filter(**data_dict)[start:end]  # 排序
+      """
+      list_pretty = PrettyNum.objects.filter(**data_dict).order_by('-level')[start:end]  # 排序
+      paginator = Paginator(list_pretty, 30)
+      page = request.GET.get('page')
+      try:
+          pretties = paginator.page(page)
+      except PageNotAnInteger:
+          pretties = paginator.page(1)
+      except EmptyPage:
+          pretties = paginator.page(paginator.num_pages)
+      return render(request, 'pretty_list3.html', {'pretties': pretties, 'search_data': search_data})  # 上次查询记忆
+      """
+  
+      # 页码django生成
+  
+      # 选择当前页的前五后五
+      plus = 5
+      if total_page_count <= 2 * plus + 1:  # 当数据较少
+          left_page = 1
+          right_page = total_page_count
+      else:  # 当数据较多
+          left_page = page - plus
+          right_page = page + plus
+          if page <= plus:  # 当前页小于前5
+              left_page = 1
+          if page >= total_page_count - plus:  # 当前页大于后5
+              right_page = total_page_count
+  
+      page_str_list = []
+      # 首页
+      page_str_list.append(f'<li><a href="/pretty/list/?page={1}">首页</a></li>')
+      # 上一页
+      if page > 1:
+          prev = f'<li><a href="/pretty/list/?page={page - 1}">上一页</a></li>'
+      else:
+          prev = f'<li><a href="/pretty/list/?page={1}">上一页</a></li>'
+      page_str_list.append(prev)
+      # 前五后五
+      for i in range(left_page, right_page + 1):
+          if i == page:  # 当前页 标识
+              ele = f'<li class="active"><a href="/pretty/list/?page={i}">{i}</a></li>'
+          else:
+              ele = f'<li><a href="/pretty/list/?page={i}">{i}</a></li>'
+          page_str_list.append(ele)
+      # 下一页
+      if page < total_page_count:
+          prev = f'<li><a href="/pretty/list/?page={page + 1}">下一页</a></li>'
+      else:
+          prev = f'<li><a href="/pretty/list/?page={total_page_count}">下一页</a></li>'
+      page_str_list.append(prev)
+      # 尾页
+      page_str_list.append(f'<li><a href="/pretty/list/?page={total_page_count}">尾页</a></li>')
+  
+      # 查询页
+      search_string = """
+       <li>
+          <form method="get" style="float: left; margin-left: -1px">
+              <input type="text" class="form-control" placeholder="页码" name="page"
+                     style="position: relative; float: left; display: inline-block; width: 80px; border-radius: 0;">
+              <button class="btn btn-default" type="submit"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">跳转</font></font></button>
+          </form>
+      </li>
+      """
+      page_str_list.append(search_string)
+  
+      page_string = mark_safe(''.join(page_str_list))  # 标记安全 html
+  
+      return render(request, 'pretty/pretty_list.html',
+                    {'list_pretty': list_pretty, 'search_data': search_data, 'page_string': page_string})  # 上次查询记忆
+  
+  ```
+
+  pretty_list.html
+
+  ```python
+  {% extends 'common/layout.html' %}
+  
+  {% block css %}
+      <style>
+          .panel {
+              margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+          }
+          
+          .fixed-pagination {
+              position: fixed;
+              bottom: 0;
+              left: 50%; /* 把左边位置设置为视窗的50% */
+              transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+              background-color: transparent;
+              padding: 10px 0;
+          }
+      </style>
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+  
+          <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <!-- 按钮 -->
+              <div>
+                  <a class="btn btn-success" href="/pretty/model/form/add/">
+                      <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                      新建靓号mf
+                  </a>
+              </div>
+  
+              <!-- 搜索框 -->
+              <div style="width: 300px;">
+  
+                  <form method="get">
+                      <div class="input-group">
+                          <input type="text" name="q" class="form-control" placeholder="Search for..."
+                                 value="{{ search_data }}">
+                          <span class="input-group-btn">
+                              <button class="btn btn-default" type="submit">
+                                  <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                              </button>
+                          </span>
+                      </div><!-- /input-group -->
+                  </form>
+  
+              </div>
+          </div>
+  
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  靓号列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">手机号码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">价格</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">级别</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">状态</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for pretty in list_pretty %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.mobile }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.price }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.get_level_display }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.get_status_display }}</font></font></td>
+  
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs"
+                                     href="/pretty/model/form/{{ pretty.id }}/edit/">编辑mf</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/pretty/dlt/?nid={{ pretty.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+          <!--分页控件
+          <nav aria-label="Page navigation" class="fixed-pagination">
+              <ul class="pagination">
+                  {% if pretties.has_previous %}
+                      <li>
+                          <a href="?page=1" aria-label="First">
+                              <span aria-hidden="true">&laquo;&laquo;</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="?page={{ pretties.previous_page_number }}" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                          </a>
+                      </li>
+                  {% else %}
+                      <li class="disabled">
+                          <a href="#" aria-label="First">
+                              <span aria-hidden="true">&laquo;&laquo;</span>
+                          </a>
+                      </li>
+                      <li class="disabled">
+                          <a href="#" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                          </a>
+                      </li>
+                  {% endif %}
+  
+                  {% if pretties.number|add:"-5" > 1 %}
+                      <li><a href="?page=1">1</a></li>
+                      <li class="disabled"><span>...</span></li>
+                  {% endif %}
+  
+                  {% for i in pretties.paginator.page_range %}
+                      {% if i >= pretties.number|add:"-5" and i <= pretties.number|add:"4" %}
+                          {% if pretties.number == i %}
+                              <li class="active"><a href="?page={{ i }}">{{ i }}</a></li>
+                          {% else %}
+                              <li><a href="?page={{ i }}">{{ i }}</a></li>
+                          {% endif %}
+                      {% endif %}
+                  {% endfor %}
+  
+                  {% if pretties.number|add:"4" < pretties.paginator.num_pages %}
+                      <li class="disabled"><span>...</span></li>
+                      <li><a href="?page={{ pretties.paginator.num_pages }}">{{ pretties.paginator.num_pages }}</a></li>
+                  {% endif %}
+  
+                  {% if pretties.has_next %}
+                      <li>
+                          <a href="?page={{ pretties.next_page_number }}" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="?page={{ pretties.paginator.num_pages }}" aria-label="Last">
+                              <span aria-hidden="true">&raquo;&raquo;</span>
+                          </a>
+                      </li>
+                  {% else %}
+                      <li class="disabled">
+                          <a href="#" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                          </a>
+                      </li>
+                      <li class="disabled">
+                          <a href="#" aria-label="Last">
+                              <span aria-hidden="true">&raquo;&raquo;</span>
+                          </a>
+                      </li>
+                  {% endif %}
+              </ul>
+          </nav>-->
+          <ul class="pagination">
+  
+          </ul>
+          <br>
+  
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  
+
+#### django组件 (逐渐重构)
+
+- 分页功能(封装对象)
+
+  app01\utils\pagination.py
+
+  ```python
+  from django.utils.safestring import mark_safe
+  
+  
+  class Pagination(object):
+      """ 
+      自定义的分类组件
+  
+      在视图函数：
+      # 1 根据情况筛选数据
+      queryset = PrettyNum.objects.filter(**data_dict).order_by('-level')  # 搜索完的数据
+      # 2 实例化分页对象
+      page_object = Pagination(request, queryset)  # page_size=20
+      context = {
+          'list_xxxxx': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+  
+      在html：
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+      """
+  
+      def __init__(self, request, queryset, page_size=20, page_param='page', plus=5):
+          """
+          @param request: 请求对象
+          @param queryset: 符合条件的数据 (尚未分页处理)
+          @param page_size: 每页显示多少条数据
+          @param page_param: 在url中传递发获取分页的参数  /pretty/list/?page=4
+          @param plus: 显示当前页的前n后n
+          """
+          # 获取当前页  每页多少个
+          page = request.GET.get(page_param, '1')
+          # if page.isdecimal():
+          #     page = int(page)
+          # else:
+          #     page = 1
+          # self.page = page
+          self.page = int(page) if page.isdecimal() else 1
+          self.page_size = page_size
+          # 起始结束
+          self.start = (self.page - 1) * page_size
+          self.end = self.page * page_size
+          # 所有页的数据
+          self.page_queryset = queryset[self.start:self.end]
+          # 总页码
+          total_count = queryset.count()  # 数据总条数
+          total_page_count, div = divmod(total_count, page_size)
+          if div:
+              total_page_count += 1
+          self.total_page_count = total_page_count
+          # 前5后5
+          self.plus = plus
+  
+      def html(self):
+          # 选择当前页的前五后五
+          if self.total_page_count <= 2 * self.plus + 1:  # 当数据较少
+              left_page = 1
+              right_page = self.total_page_count
+          else:  # 当数据较多
+              left_page = self.page - self.plus
+              right_page = self.page + self.plus
+              if self.page <= self.plus:  # 当前页小于前5
+                  left_page = 1
+              if self.page >= self.total_page_count - self.plus:  # 当前页大于后5
+                  right_page = self.total_page_count
+  
+          page_str_list = []
+          # 首页
+          page_str_list.append(f'<li><a href="/pretty/list/?page={1}">首页</a></li>')
+          # 上一页
+          if self.page > 1:
+              prev = f'<li><a href="/pretty/list/?page={self.page - 1}">上一页</a></li>'
+          else:
+              prev = f'<li><a href="/pretty/list/?page={1}">上一页</a></li>'
+          page_str_list.append(prev)
+          # 前五后五
+          for i in range(left_page, right_page + 1):
+              if i == self.page:  # 当前页 标识
+                  ele = f'<li class="active"><a href="/pretty/list/?page={i}">{i}</a></li>'
+              else:
+                  ele = f'<li><a href="/pretty/list/?page={i}">{i}</a></li>'
+              page_str_list.append(ele)
+          # 下一页
+          if self.page < self.total_page_count:
+              prev = f'<li><a href="/pretty/list/?page={self.page + 1}">下一页</a></li>'
+          else:
+              prev = f'<li><a href="/pretty/list/?page={self.total_page_count}">下一页</a></li>'
+          page_str_list.append(prev)
+          # 尾页
+          page_str_list.append(f'<li><a href="/pretty/list/?page={self.total_page_count}">尾页</a></li>')
+  
+          # 查询页
+          search_string = """
+           <li>
+              <form method="get" style="float: left; margin-left: -1px">
+                  <input type="text" class="form-control" placeholder="页码" name="page"
+                         style="position: relative; float: left; display: inline-block; width: 80px; border-radius: 0;">
+                  <button class="btn btn-default" type="submit"><font style="vertical-align: inherit;"><font
+                          style="vertical-align: inherit;">跳转</font></font></button>
+              </form>
+          </li>
+          """
+          page_str_list.append(search_string)
+  
+          page_string = mark_safe(''.join(page_str_list))  # 标记安全 html
+          return page_string
+  ```
+
+  views.py
+
+  ```python
+  def pretty_list(request):
+      """ 靓号列表 """
+      # 条件筛选
+      data_dict = {}
+      search_data = request.GET.get('q', '')  # 有值拿值 没值空字符串
+      if search_data:  # 考虑空字典情况
+          data_dict['mobile__contains'] = search_data
+  
+      # 自定义页码对象 实例化
+      queryset = PrettyNum.objects.filter(**data_dict).order_by('-level')  # 搜索完的数据
+      page_object = Pagination(request, queryset, page_size=18)  # page_size=20
+      context = {
+          'search_data': search_data,  # 条件筛选
+          'list_pretty': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+  
+      return render(request, 'pretty/pretty_list.html', context)
+  ```
+
+  pretty_list.html
+
+  ```html
+  {% extends 'common/layout.html' %}
+  
+  {% block css %}
+      <style>
+          .panel {
+              margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+          }
+  
+          .fixed-pagination {
+              position: fixed;
+              bottom: 0;
+              left: 50%; /* 把左边位置设置为视窗的50% */
+              transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+              background-color: transparent;
+              padding: 10px 0;
+          }
+      </style>
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+  
+          <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <!-- 按钮 -->
+              <div>
+                  <a class="btn btn-success" href="/pretty/model/form/add/">
+                      <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                      新建靓号mf
+                  </a>
+              </div>
+  
+              <!-- 搜索框 -->
+              <div style="width: 300px;">
+  
+                  <form method="get">
+                      <div class="input-group">
+                          <input type="text" name="q" class="form-control" placeholder="Search for..."
+                                 value="{{ search_data }}">
+                          <span class="input-group-btn">
+                              <button class="btn btn-default" type="submit">
+                                  <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                              </button>
+                          </span>
+                      </div><!-- /input-group -->
+                  </form>
+  
+              </div>
+          </div>
+  
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  靓号列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">手机号码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">价格</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">级别</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">状态</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for pretty in list_pretty %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.mobile }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.price }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.get_level_display }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.get_status_display }}</font></font></td>
+  
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs"
+                                     href="/pretty/model/form/{{ pretty.id }}/edit/">编辑mf</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/pretty/dlt/?nid={{ pretty.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+          <!--分页控件-->
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  
+
+- 分页+条件
+
+  app01\utils\pagination.py
+
+  ```python
+  import copy
+  
+  from django.utils.safestring import mark_safe
+  
+  
+  class Pagination(object):
+      """ 
+      自定义的分类组件
+  
+      在视图函数：
+      # 1 根据情况筛选数据
+      queryset = PrettyNum.objects.filter(**data_dict).order_by('-level')  # 搜索完的数据
+      # 2 实例化分页对象
+      page_object = Pagination(request, queryset)  # page_size=20
+      context = {
+          'list_xxxxx': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+  
+      在html：
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+      """
+  
+      def __init__(self, request, queryset, page_size=20, page_param='page', plus=5):
+          """
+          @param request: 请求对象
+          @param queryset: 符合条件的数据 (尚未分页处理)
+          @param page_size: 每页显示多少条数据
+          @param page_param: 在url中传递发获取分页的参数  ?page=4
+          @param plus: 显示当前页的前n后n
+          """
+  
+          # url &
+          query_dict = copy.deepcopy(request.GET)
+          query_dict._mutable = True
+          self.query_dict = query_dict
+          self.page_param = page_param  # 当前要新加的
+  
+          # 获取当前页  每页多少个
+          page = request.GET.get(page_param, '1')
+          self.page = int(page) if page.isdecimal() else 1
+          self.page_size = page_size
+          # 起始结束
+          self.start = (self.page - 1) * page_size
+          self.end = self.page * page_size
+          # 所有页的数据
+          self.page_queryset = queryset[self.start:self.end]
+          # 总页码
+          total_count = queryset.count()  # 数据总条数
+          total_page_count, div = divmod(total_count, page_size)
+          if div:
+              total_page_count += 1
+          self.total_page_count = total_page_count
+          # 前5后5
+          self.plus = plus
+  
+      def html(self):
+          # 选择当前页的前五后五
+          if self.total_page_count <= 2 * self.plus + 1:  # 当数据较少
+              left_page = 1
+              right_page = self.total_page_count
+          else:  # 当数据较多
+              left_page = self.page - self.plus
+              right_page = self.page + self.plus
+              if self.page <= self.plus:  # 当前页小于前5
+                  left_page = 1
+              if self.page >= self.total_page_count - self.plus:  # 当前页大于后5
+                  right_page = self.total_page_count
+  
+          page_str_list = []
+          # url &
+          self.query_dict.setlist(self.page_param, [1])  # 在原来的条件上 加新的
+          # 首页
+          page_str_list.append(f'<li><a href="?{self.query_dict.urlencode()}">首页</a></li>')
+          # 上一页
+          if self.page > 1:
+              self.query_dict.setlist(self.page_param, [self.page - 1])  # 在原来的条件上 加新的
+              prev = f'<li><a href="?{self.query_dict.urlencode()}">上一页</a></li>'
+          else:
+              self.query_dict.setlist(self.page_param, [1])  # 在原来的条件上 加新的
+              prev = f'<li><a href="?{self.query_dict.urlencode()}">上一页</a></li>'
+          page_str_list.append(prev)
+          # 前五后五
+          for i in range(left_page, right_page + 1):
+              if i == self.page:  # 当前页 标识
+                  self.query_dict.setlist(self.page_param, [i])  # 在原来的条件上 加新的
+                  ele = f'<li class="active"><a href="?{self.query_dict.urlencode()}">{i}</a></li>'
+              else:
+                  self.query_dict.setlist(self.page_param, [i])  # 在原来的条件上 加新的
+                  ele = f'<li><a href="?{self.query_dict.urlencode()}">{i}</a></li>'
+              page_str_list.append(ele)
+          # 下一页
+          if self.page < self.total_page_count:
+              self.query_dict.setlist(self.page_param, [self.page + 1])  # 在原来的条件上 加新的
+              prev = f'<li><a href="?{self.query_dict.urlencode()}">下一页</a></li>'
+          else:
+              self.query_dict.setlist(self.page_param, [self.total_page_count])  # 在原来的条件上 加新的
+              prev = f'<li><a href="?{self.query_dict.urlencode()}">下一页</a></li>'
+          page_str_list.append(prev)
+          # 尾页
+          self.query_dict.setlist(self.page_param, [self.total_page_count])  # 在原来的条件上 加新的
+          page_str_list.append(f'<li><a href="?{self.query_dict.urlencode()}">尾页</a></li>')
+  
+          # 查询页
+          search_string = """
+           <li>
+              <form method="get" style="float: left; margin-left: -1px">
+                  <input type="text" class="form-control" placeholder="页码" name="page"
+                         style="position: relative; float: left; display: inline-block; width: 80px; border-radius: 0;">
+                  <button class="btn btn-default" type="submit"><font style="vertical-align: inherit;"><font
+                          style="vertical-align: inherit;">跳转</font></font></button>
+              </form>
+          </li>
+          """  # ajax
+          page_str_list.append(search_string)
+  
+          page_string = mark_safe(''.join(page_str_list))  # 标记安全 html
+          return page_string
+  
+  ```
+
+  views.py
+
+  ```python
+  def user_list(request):
+      """ 用户列表 """
+  
+      """
+      list_user = UserInfo.objects.all()
+      paginator = Paginator(list_user, 30)  # 每页显示10条数据
+  
+      page = request.GET.get('page')
+      try:
+          users = paginator.page(page)
+      except PageNotAnInteger:
+          users = paginator.page(1)  # 如果页数不是整数，显示第一页
+      except EmptyPage:
+          users = paginator.page(paginator.num_pages)  # 如果页数超出范围，显示最后一页
+  
+      return render(request, 'user/user_list.html', {'users': users})
+      """
+  
+      queryset = UserInfo.objects.all()
+      page_object = Pagination(request, queryset)
+      context = {
+          'list_user': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+      return render(request, 'user/user_list.html', context)
+  
+  ```
+
+  user_list.html
+
+  ```html
+          <!--分页控件-->
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+  
+  ```
+
+  
+
+- 时间插件
+
+  引入css、js；js代码
+
+  ```html
+  <link rel="stylesheet" href="static/plugins/bootstrap-3.4.1/css/bootstrap.css">
+  <link rel="stylesheet" href="static/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css">
+  
+  
+  <input type="text" id="dt" class="form-control" placeholder="入职日期">
+  
+  
+  
+  <script src="static/js/jquery-3.6.0.min.js"></script>
+  <script src="static/plugins/bootstrap-3.4.1/js/bootstrap.js"></script>
+  <script src="static/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+  <script src="static/plugins/bootstrap-datepicker/locales/bootstrap-datepicker.zh-CN.min.js"></script>
+  
+  
+  <script>
+      $(function () {
+          $('#dt').datepicker({
+              format: 'yyyy-mm-dd',
+              startDate: '0',
+              language: "zh-CN",
+              autoclose: true
+          });
+  
+      })
+  </script>
+  ```
+
+  日期
+
+  ```html
+  {% extends 'layout2.html' %}
+  {% load static %}
+  
+  {% block css %}
+      <link rel="stylesheet" href="{% static 'plugins/bootstrap-datepicker/css/bootstrap-datepicker.min.css' %}">
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">新建用户</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post" novalidate>
+                      {% csrf_token %}
+  
+                      {% for field in form %}
+                          <label>{{ field.label }}</label>
+                          {{ field }}
+                          <span style="color: red;">{{ field.errors.0 }}</span>
+                          <br><br>
+                      {% endfor %}
+  
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script src="{% static 'plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+      <script src="{% static 'plugins/bootstrap-datepicker/locales/bootstrap-datepicker.zh-CN.min.js' %}"></script>
+      
+      <script>
+          $(function () {
+              $('#id_create_time').datepicker({
+                  format: 'yyyy-mm-dd',
+                  startDate: '0',
+                  language: "zh-CN",
+                  autoclose: true
+              });
+          });
+          $(function () {
+              $('#id_create_time').datetimepicker({
+                  format: 'yyyy-mm-dd hh:ii:ss', // 改成了支持时分秒的格式
+                  weekStart: 1,
+                  startDate: '0',
+                  autoclose: true,
+                  minView: 0, // 或者其他合适的视图，如 `minute` 视图
+                  maxView: 1, // 或者其他合适的视图，如 `day` 视图
+                  todayBtn: true,
+                  language: 'zh-CN'
+              });
+          });
+  
+      </script>
+  
+  {% endblock %}
+  ```
+
+  日期时间
+
+  ```html
+  {% extends 'common/layout.html' %}
+  {% load static %}
+  
+  {% block css %}
+      <link rel="stylesheet" href="{% static 'plugins/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css' %}">
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">新建用户</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post" novalidate>
+                      {% csrf_token %}
+  
+                      {% for field in form %}
+                          <label>{{ field.label }}</label>
+                          {{ field }}
+                          <span style="color: red;">{{ field.errors.0 }}</span>
+                          <br><br>
+                      {% endfor %}
+  
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script src="{% static 'plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js' %}"></script>
+      <script src="{% static 'plugins/bootstrap-datetimepicker/locales/bootstrap-datetimepicker.zh-CN.js' %}" charset="UTF-8"></script>
+      
+      <script>
+          $(function () {
+              $('#id_create_time').datetimepicker({
+                  format: 'yyyy-mm-dd hh:ii:ss', // 改成了支持时分秒的格式
+                  weekStart: 1,
+                  startDate: '0',
+                  autoclose: true,
+                  minView: 0, // 或者其他合适的视图，如 `minute` 视图
+                  maxView: 1, // 或者其他合适的视图，如 `day` 视图
+                  todayBtn: true,
+                  language: 'zh-CN'
+              });
+          });
+  
+      </script>
+  
+  {% endblock %}
+  ```
+
+  ```
+  'autocomplete': 'off'
+  ```
+
+  
+
+- ModelForm和BootStrap
+
+  ModelForm可以帮助我们生成HTML标签，但是没有Bootstrap样式
+
+  ```
+  # python
+  class UserModelForm(forms.ModelForm):
+      class Meta:
+          model = models.UserInfo
+          fields = ["name", "password",]
+  
+  
+  form = UserModelForm()
+  
+  
+  # html
+  {{form.name}}      普通的input框
+  {{form.password}}  普通的input框
+  ```
+
+  定义插件，来弥补Bootstrap样式 (太繁琐)
+
+  ```
+  class UserModelForm(forms.ModelForm):
+      class Meta:
+          model = models.UserInfo
+          fields = ["name", "password",]
+          widgets = {
+              "name": forms.TextInput(attrs={"class": "form-control"}),
+              "password": forms.PasswordInput(attrs={"class": "form-control"}),
+              "age": forms.TextInput(attrs={"class": "form-control"}),
+          }
+  ```
+
+  ```
+  class UserModelForm(forms.ModelForm):
+      name = forms.CharField(
+          min_length=3,
+          label="用户名",
+          widget=forms.TextInput(attrs={"class": "form-control"})
+      )
+  
+      class Meta:
+          model = models.UserInfo
+          fields = ["name", "password", "age"]
+  ```
+
+  重新定义的init方法 (批量设置 重复代码)
+
+  ```
+  class UserModelForm(forms.ModelForm):
+      class Meta:
+          model = models.UserInfo
+          fields = ["name", "password", "age",]
+  
+      def __init__(self, *args, **kwargs):
+          super().__init__(*args, **kwargs)
+          
+          # 循环ModelForm中的所有字段，给每个字段的插件设置
+          for name, field in self.fields.items():
+  			field.widget.attrs = {
+                  "class": "form-control", 
+                  "placeholder": field.label
+              }
+  ```
+
+  ```
+  class UserModelForm(forms.ModelForm):
+      class Meta:
+          model = models.UserInfo
+          fields = ["name", "password", "age",]
+  
+      def __init__(self, *args, **kwargs):
+          super().__init__(*args, **kwargs)
+          
+          # 循环ModelForm中的所有字段，给每个字段的插件设置
+          for name, field in self.fields.items():
+              # 字段中有属性，保留原来的属性，没有属性，才增加。
+              if field.widget.attrs:
+  				field.widget.attrs["class"] = "form-control"
+  				field.widget.attrs["placeholder"] = field.label
+              else:
+                  field.widget.attrs = {
+                      "class": "form-control", 
+                      "placeholder": field.label
+                  }
+  ```
+
+- 自定义类来继承
+
+  ```
+  class BootStrapModelForm(forms.ModelForm):
+      def __init__(self, *args, **kwargs):
+          super().__init__(*args, **kwargs)
+          # 循环ModelForm中的所有字段，给每个字段的插件设置
+          for name, field in self.fields.items():
+              # 字段中有属性，保留原来的属性，没有属性，才增加。
+              if field.widget.attrs:
+  				field.widget.attrs["class"] = "form-control"
+  				field.widget.attrs["placeholder"] = field.label
+              else:
+                  field.widget.attrs = {
+                      "class": "form-control", 
+                      "placeholder": field.label
+                  }
+  ```
+
+  ```
+  class UserEditModelForm(BootStrapModelForm):
+      class Meta:
+          model = models.UserInfo
+          fields = ["name", "password", "age",]
+  ```
+
+  app01\utils\bootstrap.py
+
+  ```python
+  from django.forms import ModelForm
+  
+  
+  class BootStrapModelForm(ModelForm):
+      def __init__(self, *args, **kwargs):
+          super().__init__(*args, **kwargs)
+          # 循环ModelForm中的所有字段，给每个字段的插件设置
+          for name, field in self.fields.items():
+              # 字段中有属性，保留原来的属性，没有属性，才增加。
+              if field.widget.attrs:
+                  field.widget.attrs["class"] = "form-control"
+                  field.widget.attrs["placeholder"] = field.label
+              else:
+                  field.widget.attrs = {
+                      "class": "form-control",
+                      "placeholder": field.label
+                  }
+  
+  ```
+
+  views.py
+
+  ```python
+  class UserModelForm(BootStrapModelForm):
+      # 清理__init__
+  ```
+
+  ```python
+  class UserModelForm(BootStrapModelForm):
+      # 额外加验证
+      password_validator = RegexValidator(
+          regex=r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$',
+          message="密码必须至少有8个字符，包括大小写字母和数字。"
+      )
+      name = forms.CharField(min_length=2, label='用户名')
+      password = forms.CharField(label='密码', validators=[password_validator])  # 正则校验
+  
+      class Meta:
+          model = UserInfo
+          fields = ['name', 'password', 'age', 'account', 'create_time', 'depart', 'gender']
+  ```
+
+  ```python
+  class PrettyEditModelForm(BootStrapModelForm):
+      class Meta:
+          model = PrettyNum
+          fields = ['mobile', 'price', 'level', 'status']  # 自定义选择字段
+  
+      def clean_mobile(self):  # 钩子方法
+          txt_mobile = self.cleaned_data['mobile']
+  
+          # 手机号码不允许重复
+          exists = PrettyNum.objects.exclude(id=self.instance.pk).filter(mobile=txt_mobile)  # 当前编辑的那一行id
+          if exists:
+              raise ValidationError('该手机号码已经存在')
+  
+          if len(txt_mobile) != 11:
+              raise ValidationError('手机号码的格式有误')
+          return txt_mobile
+  ```
+
+  ```python
+  from app01.models import Department, UserInfo, PrettyNum
+  from app01.utils.form import PrettyEditModelForm, PrettyModelForm, UserModelForm
+  from app01.utils.pagination import Pagination
+  ```
+
+  app01\utils\form.py
+
+  ```python
+  
+  from django import forms
+  from django.core.exceptions import ValidationError
+  from django.core.validators import RegexValidator
+  
+  from app01.models import UserInfo, PrettyNum
+  from app01.utils.bootstrap import BootStrapModelForm
+  
+  
+  class UserModelForm(BootStrapModelForm):
+      # 额外加验证
+      password_validator = RegexValidator(
+          regex=r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$',
+          message="密码必须至少有8个字符，包括大小写字母和数字。"
+      )
+      name = forms.CharField(min_length=2, label='用户名')
+      password = forms.CharField(label='密码', validators=[password_validator])  # 正则校验
+  
+      class Meta:
+          model = UserInfo
+          fields = ['name', 'password', 'age', 'account', 'create_time', 'depart', 'gender']
+  
+  
+  class PrettyModelForm(BootStrapModelForm):
+      class Meta:
+          model = PrettyNum
+          fields = '__all__'  # 所有字段
+  
+      def clean_mobile(self):  # 钩子方法
+          txt_mobile = self.cleaned_data['mobile']
+  
+          # 不允许手机号码重复
+          exists = PrettyNum.objects.filter(mobile=txt_mobile).exists()
+          if exists:
+              raise ValidationError('该手机号码已经存在')
+  
+          if len(txt_mobile) != 11:
+              raise ValidationError('手机号码的格式有误')
+          return txt_mobile
+  
+  
+  class PrettyEditModelForm(BootStrapModelForm):
+      class Meta:
+          model = PrettyNum
+          fields = ['mobile', 'price', 'level', 'status']  # 自定义选择字段
+          # exclude = ['status']   # 排除哪个字段
+          # fields = '__all__'  # 所有字段
+  
+      # 验证方式2
+      def clean_mobile(self):  # 钩子方法
+          txt_mobile = self.cleaned_data['mobile']
+  
+          # 手机号码不允许重复
+          exists = PrettyNum.objects.exclude(id=self.instance.pk).filter(mobile=txt_mobile)  # 当前编辑的那一行id
+          if exists:
+              raise ValidationError('该手机号码已经存在')
+  
+          if len(txt_mobile) != 11:
+              raise ValidationError('手机号码的格式有误')
+          return txt_mobile
+  ```
+
+  
+
+- 删掉views(修改url)
+
+  urls.py
+
+  ```python
+  from django.contrib import admin
+  from django.urls import path
+  
+  from app01.views import depart, user, pretty
+  
+  urlpatterns = [
+      path('admin/', admin.site.urls),
+  
+      # 部门管理
+      path("depart/list/", depart.depart_list),
+      path("depart/add/", depart.depart_add),
+      path("depart/dlt/", depart.depart_dlt),
+      path("depart/<int:nid>/edit/", depart.depart_edit),
+  
+      # 用户管理
+      path("user/list/", user.user_list),
+      path("user/dlt/", user.user_dlt),
+      path("user/model/form/add/", user.user_model_form_add),
+      path("user/model/form/<int:nid>/edit/", user.user_model_form_edit),
+  
+      # 靓号管理
+      path("pretty/list/", pretty.pretty_list),
+      path("pretty/model/form/add/", pretty.pretty_model_form_add),
+      path("pretty/dlt/", pretty.pretty_dlt),
+      path("pretty/model/form/<int:nid>/edit/", pretty.pretty_model_form_edit),
+  ]
+  ```
+
+  app01\views\depart.py
+
+  ```python
+  from django.shortcuts import render, redirect
+  
+  from app01.models import Department
+  from app01.utils.pagination import Pagination
+  
+  
+  def depart_list(request):
+      """ 部门列表 """
+      queryset = Department.objects.all()
+      page_object = Pagination(request, queryset)
+      context = {
+          'list_depart': page_object.page_queryset,
+          'page_string': page_object.html()
+      }
+      return render(request, 'depart/depart_list.html', context)
+  
+  
+  def depart_add(request):
+      """ 部门添加 """
+      if request.method == 'GET':
+          return render(request, 'depart/depart_add.html')
+      # POST  获取用户提交数据  保存到数据库
+      title = request.POST.get('title')
+      Department.objects.create(title=title)
+      return redirect('/depart/list/')  # 重定向
+  
+  
+  def depart_dlt(request):
+      """ 部门删除 """
+      depart_id = request.GET.get('nid')
+      Department.objects.filter(id=depart_id).delete()
+      return redirect('/depart/list/')
+  
+  
+  def depart_edit(request, nid):  # 编辑区别于添加  携带id
+      """ 部门编辑 """
+      if request.method == 'GET':
+          row = Department.objects.filter(id=nid).first()
+          return render(request, 'depart/depart_edit.html', {'row': row})  # 传默认值
+      # POST  获取用户提交数据  更新到数据库
+      title = request.POST.get('title')
+      Department.objects.filter(id=nid).update(title=title)
+      return redirect('/depart/list/')  # 重定向
+  
+  ```
+  
+  app01\views\user.py
+
+  ```python
+  from django.shortcuts import render, redirect
+  
+  from app01.models import UserInfo
+  from app01.utils.form import UserModelForm
+  from app01.utils.pagination import Pagination
+  
+  
+  def user_list(request):
+      """ 用户列表 """
+  
+      """
+      list_user = UserInfo.objects.all()
+      paginator = Paginator(list_user, 20)  # 每页显示10条数据
+      page = request.GET.get('page')
+      try:
+          users = paginator.page(page)
+      except PageNotAnInteger:
+          users = paginator.page(1)  # 如果页数不是整数，显示第一页
+      except EmptyPage:
+          users = paginator.page(paginator.num_pages)  # 如果页数超出范围，显示最后一页
+      return render(request, 'user_list2.html', {'users': users})
+      """
+  
+      queryset = UserInfo.objects.all()
+      page_object = Pagination(request, queryset)
+      context = {
+          'list_user': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+      return render(request, 'user/user_list.html', context)
+  
+  
+  def user_dlt(request):
+      """ 用户删除 """
+      user_id = request.GET.get('nid')
+      UserInfo.objects.filter(id=user_id).delete()
+      return redirect('/user/list/')
+  
+  
+  def user_model_form_add(request):
+      """ 用户添加 model form """
+      if request.method == 'GET':
+          form = UserModelForm()
+          return render(request, 'user/user_model_form_add.html', {'form': form})
+  
+      # POST  数据校验 用户提示
+      form = UserModelForm(data=request.POST)
+      if form.is_valid():
+          # 合法数据：{'name': 'time1043', 'password': '11', 'age': 1, 'account': Decimal('0'), 'create_time': datetime.datetime(2022, 11, 22, 12, 12, 12, tzinfo=backports.zoneinfo.ZoneInfo(key='UTC')), 'depart': <Department: HR (人力资源)>, 'gender': 1}
+          form.save()  # django 保存到数据库中
+          return redirect('/user/list/')
+  
+      # 校验失败 提示用户
+      return render(request, 'user/user_model_form_add.html', {'form': form})
+  
+  
+  def user_model_form_edit(request, nid):
+      """ 用户编辑 model form """
+      row = UserInfo.objects.filter(id=nid).first()
+  
+      if request.method == 'GET':
+          form = UserModelForm(instance=row)  # mf 设置默认值
+          return render(request, 'user/user_model_form_edit.html', {'form': form})
+      # POST
+      form = UserModelForm(data=request.POST, instance=row)  # 变新增为提交
+      if form.is_valid():
+          # 默认保存的是用户输入的所有数据  若想保存用户没权限输入的数据
+          # form.instance.字段名 = 值
+          form.save()
+          return redirect('/user/list/')
+      # 不合法数据
+      return render(request, 'user/user_model_form_edit.html', {'form': form})
+  
+  ```
+  
+  app01\views\pretty.py
+  
+  ```python
+  from django.shortcuts import render, redirect
+  
+  from app01.models import PrettyNum
+  from app01.utils.form import PrettyEditModelForm, PrettyModelForm
+  from app01.utils.pagination import Pagination
+  
+  
+  def pretty_list(request):
+      """ 靓号列表 """
+      # 条件筛选
+      data_dict = {}
+      search_data = request.GET.get('q', '')  # 有值拿值 没值空字符串
+      if search_data:  # 考虑空字典情况
+          data_dict['mobile__contains'] = search_data
+  
+      # 自定义页码对象 实例化
+      queryset = PrettyNum.objects.filter(**data_dict).order_by('-level')  # 搜索完的数据
+      page_object = Pagination(request, queryset, page_size=18)  # page_size=20
+      context = {
+          'search_data': search_data,  # 条件筛选
+          'list_pretty': page_object.page_queryset,  # 分完页的数据
+          'page_string': page_object.html()  # 页码
+      }
+  
+      return render(request, 'pretty/pretty_list.html', context)
+  
+  
+  def pretty_model_form_add(request):
+      """ 新建靓号 """
+      if request.method == 'GET':
+          form = PrettyModelForm()
+          return render(request, 'pretty/pretty_model_form_add.html', {'form': form})
+      # POST
+      form = PrettyModelForm(data=request.POST)  # 传默认数据
+      if form.is_valid():
+          form.save()
+          return redirect('/pretty/list/')
+      # 校验失败
+      return render(request, 'pretty/pretty_model_form_add.html', {'form': form})  # 显示错误信息
+  
+  
+  def pretty_dlt(request):
+      """ 删除靓号 """
+      pretty_id = request.GET.get('nid')
+      PrettyNum.objects.filter(id=pretty_id).delete()
+      return redirect('/pretty/list/')
+  
+  
+  def pretty_model_form_edit(request, nid):
+      """ 编辑靓号 """
+      row = PrettyNum.objects.filter(id=nid).first()
+      if request.method == 'GET':
+          form = PrettyEditModelForm(instance=row)  # 默认值设置
+          return render(request, 'pretty/pretty_model_form_edit.html', {'form': form})
+      # POST
+      form = PrettyEditModelForm(data=request.POST, instance=row)  # 默认值填充
+      if form.is_valid():
+          form.save()
+          return redirect('/pretty/list/')
+      # 不合法数据
+      return render(request, 'pretty/pretty_model_form_edit.html', {'form': form})
+  
+  ```
+  
+  
+
+
+
+#### 代码集合
+
+- 重构项目
+
+  提取公共的类：class BootStrapModelForm(forms.ModelForm):
+
+  ModelForm拆分出来：from app01.utils.form import PrettyEditModelForm, PrettyModelForm
+
+  视图函数的归类：from app01.views import depart, user, pretty
+
+  ```
+  mkdir app01/utils app01/views
+  touch app01/utils/pagination.py app01/utils/form.py app01/utils/bootstrap.py 
+  touch app01/views/depart.py app01/views/user.py app01/views/pretty.py && rm -rf app01/views.py
+  touch app01/views/admin.py
+  
+  
+  mkdir app01/templates/common app01/templates/depart app01/templates/user app01/templates/pretty
+  touch app01/templates/pretty/pretty_list.html app01/templates/pretty/pretty_model_form_add.html app01/templates/pretty/pretty_model_form_edit.html
+  mv app01/templates/layout.html app01/templates/common/layout.html
+  
+  
+  mv app01/templates/depart_list.html app01/templates/depart/depart_list.html
+  mv app01/templates/depart_add.html app01/templates/depart/depart_add.html
+  mv app01/templates/depart_edit.html app01/templates/depart/depart_edit.html
+  mv app01/templates/user_list.html app01/templates/user/user_list.html
+  mv app01/templates/user_add.html app01/templates/user/user_add.html
+  mv app01/templates/user_edit.html app01/templates/user/user_edit.html
+  mv app01/templates/user_model_form_add.html app01/templates/user/user_model_form_add.html
+  mv app01/templates/user_model_form_edit.html app01/templates/user/user_model_form_edit.html
+  
+  ```
+  
+  
+
+
+
+- 用户管理html
+
+  app01\templates\user\user_list.html
+
+  ```html
+  {% extends 'common/layout.html' %}
+  
+  {% block css %}
+      <style>
+          .panel {
+              margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+          }
+  
+          .fixed-pagination {
+              position: fixed;
+              bottom: 0;
+              left: 50%; /* 把左边位置设置为视窗的50% */
+              transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+              background-color: transparent;
+              padding: 10px 0;
+          }
+      </style>
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <!--按钮-->
+          <div style="margin-bottom: 10px">
+              <a class="btn btn-success" href="/user/model/form/add/">
+                  <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                  新建用户
+              </a>
+          </div>
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  用户列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">姓名</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">密码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">年龄</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">账户余额</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">入职时间</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">性别</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">所在部门</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for user in list_user %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.name }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.password }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.age }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.account }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.create_time|date:'Y-m-d h:i:s' }}</font></font>
+                              </td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.get_gender_display }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ user.depart.title }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs" href="/user/model/form/{{ user.id }}/edit/">编辑</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/user/dlt/?nid={{ user.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+          <!--分页控件-->
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  app01\templates\user\user_model_form_add.html
+
+  ```html
+  {% extends 'common/layout.html' %}
+  {% load static %}
+  
+  {% block css %}
+      <link rel="stylesheet" href="{% static 'plugins/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css' %}">
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">新建用户</h3>
+              </div>
+              <div class="panel-body">
+  
+                  <!--表单-->
+                  <form method="post" novalidate>
+                      {% csrf_token %}
+  
+                      {% for field in form %}
+                          <label>{{ field.label }}</label>
+                          {{ field }}
+                          <span style="color: red;">{{ field.errors.0 }}</span>
+                          <br><br>
+                      {% endfor %}
+  
+                      <button type="submit" class="btn btn-primary">提 交</button>
+                  </form>
+  
+              </div>
+          </div>
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script src="{% static 'plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js' %}"></script>
+      <script src="{% static 'plugins/bootstrap-datetimepicker/locales/bootstrap-datetimepicker.zh-CN.js' %}"
+              charset="UTF-8"></script>
+  
+      <script>
+          $(function () {
+              $('#id_create_time').datetimepicker({
+                  format: 'yyyy-mm-dd hh:ii:ss', // 改成了支持时分秒的格式
+                  weekStart: 1,
+                  startDate: '0',
+                  autoclose: true,
+                  minView: 0, // 或者其他合适的视图，如 `minute` 视图
+                  maxView: 1, // 或者其他合适的视图，如 `day` 视图
+                  todayBtn: true,
+                  language: 'zh-CN'
+              });
+          });
+  
+      </script>
+  
+  {% endblock %}
+  ```
+
+  
+
+- 靓号管理html
+
+  app01\templates\pretty\pretty_list.html
+
+  ```html
+  {% extends 'common/layout.html' %}
+  
+  {% block css %}
+      <style>
+          .panel {
+              margin-bottom: 80px; /* 根据分页控件的高度调整这个值 */
+          }
+  
+          .fixed-pagination {
+              position: fixed;
+              bottom: 0;
+              left: 50%; /* 把左边位置设置为视窗的50% */
+              transform: translateX(-50%); /* 使用transform来移动分页条左边的50%，使其居中 */
+              background-color: transparent;
+              padding: 10px 0;
+          }
+      </style>
+  {% endblock %}
+  
+  {% block content %}
+      <div class="container">
+  
+          <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <!-- 按钮 -->
+              <div>
+                  <a class="btn btn-success" href="/pretty/model/form/add/">
+                      <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                      新建靓号
+                  </a>
+              </div>
+  
+              <!-- 搜索框 -->
+              <div style="width: 300px;">
+  
+                  <form method="get">
+                      <div class="input-group">
+                          <input type="text" name="q" class="form-control" placeholder="Search for..."
+                                 value="{{ search_data }}">
+                          <span class="input-group-btn">
+                              <button class="btn btn-default" type="submit">
+                                  <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                              </button>
+                          </span>
+                      </div><!-- /input-group -->
+                  </form>
+  
+              </div>
+          </div>
+  
+  
+          <!--表格 面板-->
+          <div class="panel panel-default">
+              <!-- Default panel contents -->
+              <div class="panel-heading"><font style="vertical-align: inherit;"><font
+                      style="vertical-align: inherit;">
+                  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                  靓号列表
+              </font></font></div>
+  
+              <!-- Table -->
+              <table class="table">
+                  <thead>
+                      <tr>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">ID</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">手机号码</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">价格</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">级别</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">状态</font></font></th>
+                          <th><font style="vertical-align: inherit;"><font
+                                  style="vertical-align: inherit;">操作</font></font></th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for pretty in list_pretty %}
+                          <tr>
+                              <th scope="row"><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.id }}</font></font></th>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.mobile }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.price }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.get_level_display }}</font></font></td>
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">{{ pretty.get_status_display }}</font></font></td>
+  
+                              <td><font style="vertical-align: inherit;"><font
+                                      style="vertical-align: inherit;">
+                                  <a class="btn btn-primary btn-xs"
+                                     href="/pretty/model/form/{{ pretty.id }}/edit/">编辑</a>
+                                  <a class="btn btn-danger btn-xs"
+                                     href="/pretty/dlt/?nid={{ pretty.id }}">删除</a>
+                              </font></font></td>
+                          </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+  
+          <!--分页控件-->
+          <ul class="pagination">
+              {{ page_string }}
+          </ul>
+  
+      </div>
+  {% endblock %}
+  ```
+
+  
+
+
+
+### 用户认证和权限相关
+
+
+
+
+
+
+
+
+
+# 项目部署
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

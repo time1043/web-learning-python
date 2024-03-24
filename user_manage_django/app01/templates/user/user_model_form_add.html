@@ -1,0 +1,55 @@
+{% extends 'common/layout.html' %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">新建用户</h3>
+            </div>
+            <div class="panel-body">
+
+                <!--表单-->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        <span style="color: red;">{{ field.errors.0 }}</span>
+                        <br><br>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-primary">提 交</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap-datetimepicker/locales/bootstrap-datetimepicker.zh-CN.js' %}" charset="UTF-8"></script>
+
+    <script>
+        $(function () {
+            $('#id_create_time').datetimepicker({
+                format: 'yyyy-mm-dd hh:ii:ss', // 改成了支持时分秒的格式
+                weekStart: 1,
+                startDate: '0',
+                autoclose: true,
+                minView: 0, // 或者其他合适的视图，如 `minute` 视图
+                maxView: 1, // 或者其他合适的视图，如 `day` 视图
+                todayBtn: true,
+                language: 'zh-CN'
+            });
+        });
+
+    </script>
+
+{% endblock %}

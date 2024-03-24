@@ -5,15 +5,17 @@ import string
 import django
 from django.utils import timezone
 from faker import Faker
+from tqdm import tqdm
 
 # 确保在导入任何Django模块之前设置环境变量和初始化Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "user_manage_django.settings")
 django.setup()
 
-from app01.models import Department, UserInfo
+from app01.models import Department, UserInfo, PrettyNum
 
 
 def create_data_to_department():
+    """ 生成 Department 表的数据 """
     # 读取文件
     department_names = []
     with open('departments_name.txt', 'r', encoding='utf-8') as file:
@@ -23,13 +25,6 @@ def create_data_to_department():
     # 添加到数据库中
     for dept in department_names:
         Department.objects.create(title=dept)
-
-
-"""
-def generate_random_password(length=8):
-    characters = string.ascii_letters + string.digits
-    return ''.join(random.choice(characters) for i in range(length))
-"""
 
 
 def generate_random_password(length=8):
@@ -51,7 +46,8 @@ def generate_random_password(length=8):
 
 
 def create_data_to_userinfo(count):
-    for _ in range(count):
+    """ 生成 UserInfo 表的数据 """
+    for _ in tqdm(range(count), desc="Generating data of UserInfo"):
         naive_datetime = fake.date_time_this_decade(before_now=True, after_now=False, tzinfo=None)  # 无时区信息
         aware_datetime = timezone.make_aware(naive_datetime, timezone.get_default_timezone())  # 转换为有时区信息的对象
 
@@ -67,7 +63,29 @@ def create_data_to_userinfo(count):
         user.save()
 
 
+def generate_pretty_num_data():
+    mobile = fake.phone_number()  # 随机电话号码
+    price = round(random.uniform(0, 10000), 2)  # 随机价格区间
+    level = random.choice([1, 2, 3])  # 随机选择一个级别
+    status = random.choice([0, 1])  # 随机选择一个状态
+    return {
+        "mobile": mobile,
+        "price": price,
+        "level": level,
+        "status": status
+    }
+
+
+def create_data_to_prettynum(count):
+    """ 生成 PrettyNum 表的数据 """
+    for _ in tqdm(range(count), desc="Generating data of PrettyNum"):
+        data = generate_pretty_num_data()
+        pretty_num = PrettyNum(**data)
+        pretty_num.save()
+
+
 if __name__ == '__main__':
     fake = Faker('zh_CN')
     create_data_to_department()
     create_data_to_userinfo(1000)
+    create_data_to_prettynum(1000)
