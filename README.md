@@ -5471,7 +5471,7 @@
   {% endblock %}
   ```
   
-  1
+  
 
 
 
@@ -6216,9 +6216,135 @@
       return HttpResponse("成功了")
   ```
 
+  关闭绑定事件
+
+  ```
+  {% extends 'layout.html' %}
+  
+  
+  {% block content %}
+      <div class="container">
+          <h1>任务管理</h1>
+  
+          <h3>示例1</h3>
+          <input id="btn1" type="button" class="btn btn-primary" value="点击"/>
+  
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script type="text/javascript">
+          $(function () {
+              // 页面框架加载完成之后代码自动执行
+              bindBtn1Event();
+  
+          })
+  
+          function bindBtn1Event() {
+              $("#btn1").click(function () {
+                  $.ajax({
+                      url: '/task/ajax/',
+                      type: "post",
+                      data: {
+                          n1: 123,
+                          n2: 456
+                      },
+                      success: function (res) {
+                          console.log(res);
+                      }
+                  })
+              })
+          }
+  
+      </script>
+  {% endblock %}
+  ```
+
+  ajax请求的返回值 (一般都会返回JSON格式)
+
+  ```
+  {% extends 'layout.html' %}
+  
+  
+  {% block content %}
+      <div class="container">
+          <h1>任务管理</h1>
+  
+          <h3>示例1</h3>
+          <input id="btn1" type="button" class="btn btn-primary" value="点击"/>
+  
+      </div>
+  {% endblock %}
+  
+  {% block js %}
+      <script type="text/javascript">
+          $(function () {
+              // 页面框架加载完成之后代码自动执行
+              bindBtn1Event();
+  
+          })
+  
+          function bindBtn1Event() {
+              $("#btn1").click(function () {
+                  $.ajax({
+                      url: '/task/ajax/',
+                      type: "post",
+                      data: {
+                          n1: 123,
+                          n2: 456
+                      },
+                      dataType: "JSON",
+                      success: function (res) {
+                          console.log(res);
+                          console.log(res.status);
+                          console.log(res.data);
+                      }
+                  })
+              })
+          }
+  
+      </script>
+  {% endblock %}
+  ```
+
+  ```
+  import json
+  from django.shortcuts import render, HttpResponse
+  from django.http import JsonResponse
+  from django.views.decorators.csrf import csrf_exempt
+  
+  
+  def task_list(request):
+      """ 任务列表 """
+      return render(request, "task_list.html")
+  
+  
+  @csrf_exempt
+  def task_ajax(request):
+      print(request.GET)
+      print(request.POST)
+  
+      data_dict = {"status": True, 'data': [11, 22, 33, 44]}
+      return HttpResponse(json.dumps(data_dict))
+  ```
+
+  
+
+- 任务管理
+
+  ```
+  touch app01/views/task.py
+  mkdir app01/templates/task && touch app01/templates/task/task_list.html
+  
+  ```
+
+  注册路由
+
+  
+
+  
+
   1
-
-
 
 
 
